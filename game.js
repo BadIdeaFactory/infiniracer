@@ -139,7 +139,8 @@
   const TRACK_HW_MAX = 230;
   const SEG_LEN  = 28;
   const track    = [];        // { s, cx, cy, dir, hw, lx, ly, rx, ry }
-  let worldSeed  = (Math.random() * 1e6) | 0;
+  // Fixed seed — same track every run.
+  let worldSeed  = 7341;
 
   const smoothstep = (t) => t * t * (3 - 2 * t);
 
@@ -433,7 +434,8 @@
   }
 
   function commitReset() {
-    worldSeed = (Math.random() * 1e6) | 0;
+    // Same fixed seed → same world after a crash too.
+    worldSeed = 7341;
     track.length = 0;
     sceneryChunks.clear();
     car.x = 0; car.y = 0;
