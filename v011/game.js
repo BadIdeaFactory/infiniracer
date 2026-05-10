@@ -2,6 +2,7 @@
 (() => {
   // ───────────────────────────────────────────────────────────── canvas/dpr
   const canvas = document.getElementById("game");
+  const gpuCanvas = document.getElementById("game-gpu");
   const ctx = canvas.getContext("2d");
   const spdEl = document.getElementById("spd");
   const dstEl = document.getElementById("dst");
@@ -10,6 +11,12 @@
   const scoreEl = document.getElementById("score");
   const sbar = document.getElementById("speedbar");
   const overlay = document.getElementById("overlay");
+
+  // ── WebGPU renderer (opt-in via ?renderer=webgpu, falls back if unavailable).
+  // While `webgpu` is null the canvas-2D render path runs unchanged.
+  let webgpu = null;
+  const URL_PARAMS = new URLSearchParams(location.search);
+  const WANT_GPU = URL_PARAMS.get("renderer") === "webgpu";
 
   // (vignette was a cached canvas gradient; moved to CSS pseudo-element.)
 
@@ -22,6 +29,13 @@
     canvas.height = Math.floor(H * dpr);
     canvas.style.width = W + "px";
     canvas.style.height = H + "px";
+    if (gpuCanvas) {
+      gpuCanvas.width = Math.floor(W * dpr);
+      gpuCanvas.height = Math.floor(H * dpr);
+      gpuCanvas.style.width = W + "px";
+      gpuCanvas.style.height = H + "px";
+    }
+    if (webgpu) webgpu.resize(W, H, dpr);
     updateStickGeom();
   }
   window.addEventListener("resize", resize);
@@ -632,9 +646,15 @@
     const info = _frameTrackInfo || (_frameTrackInfo = carTrackInfo());
 
     ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
-    // Solid bg.
-    ctx.fillStyle = "#04060a";
-    ctx.fillRect(0, 0, W, H);
+    // Background: when WebGPU is rendering the world layer below, the
+    // canvas-2D layer just needs to be cleared transparent so the GPU canvas
+    // shows through. Otherwise paint the solid bg here as before.
+    if (webgpu) {
+      ctx.clearRect(0, 0, W, H);
+    } else {
+      ctx.fillStyle = "#04060a";
+      ctx.fillRect(0, 0, W, H);
+    }
 
     beams = [];
     dots  = [];
@@ -781,56 +801,61 @@
     // ── Brilliance points where unrelated lines cross.
     findIntersections();
 
-    // ─── Draw beams ──────────────────────────────────────────────
-    // Two passes — mid glow (lighter) + crisp lines (source-over).
-    ctx.lineCap = "round";
-    ctx.lineJoin = "round";
+    // ─── Draw beams + dots ──────────────────────────────────────
+    // WebGPU path: hand the same beams[] / dots[] arrays to the GPU
+    // renderer; one instanced draw call per pipeline.
+    if (webgpu) {
+      webgpu.drawFrame(beams, dots);
+    } else {
+      // Canvas-2D path: 2-pass beam stroke + 3-layer phosphor fills.
+      ctx.lineCap = "round";
+      ctx.lineJoin = "round";
 
-    ctx.globalCompositeOperation = "lighter";
-    ctx.globalAlpha = 0.26;
-    for (let i = 0; i < beams.length; i++) {
-      const b = beams[i];
-      ctx.strokeStyle = b.c;
-      ctx.lineWidth   = b.w * 2.6;
-      ctx.beginPath();
-      ctx.moveTo(b.x1, b.y1);
-      ctx.lineTo(b.x2, b.y2);
-      ctx.stroke();
-    }
-    ctx.globalAlpha = 1;
-    ctx.globalCompositeOperation = "source-over";
-    for (let i = 0; i < beams.length; i++) {
-      const b = beams[i];
-      ctx.strokeStyle = b.c;
-      ctx.lineWidth   = b.w;
-      ctx.beginPath();
-      ctx.moveTo(b.x1, b.y1);
-      ctx.lineTo(b.x2, b.y2);
-      ctx.stroke();
-    }
+      ctx.globalCompositeOperation = "lighter";
+      ctx.globalAlpha = 0.26;
+      for (let i = 0; i < beams.length; i++) {
+        const b = beams[i];
+        ctx.strokeStyle = b.c;
+        ctx.lineWidth   = b.w * 2.6;
+        ctx.beginPath();
+        ctx.moveTo(b.x1, b.y1);
+        ctx.lineTo(b.x2, b.y2);
+        ctx.stroke();
+      }
+      ctx.globalAlpha = 1;
+      ctx.globalCompositeOperation = "source-over";
+      for (let i = 0; i < beams.length; i++) {
+        const b = beams[i];
+        ctx.strokeStyle = b.c;
+        ctx.lineWidth   = b.w;
+        ctx.beginPath();
+        ctx.moveTo(b.x1, b.y1);
+        ctx.lineTo(b.x2, b.y2);
+        ctx.stroke();
+      }
 
-    // ─── Phosphor dots ──────────────────────────────────────────
-    ctx.globalCompositeOperation = "lighter";
-    for (let k = 0; k < dots.length; k++) {
-      const d = dots[k];
-      const i = d.i;
-      ctx.fillStyle = d.c;
-      ctx.globalAlpha = 0.10 * i;
-      ctx.beginPath();
-      ctx.arc(d.x, d.y, 5 + i * 3, 0, Math.PI * 2);
-      ctx.fill();
-      ctx.globalAlpha = 0.40 * i;
-      ctx.beginPath();
-      ctx.arc(d.x, d.y, 2 + i * 1.2, 0, Math.PI * 2);
-      ctx.fill();
-      ctx.fillStyle = "#ffffff";
-      ctx.globalAlpha = Math.min(1, i);
-      ctx.beginPath();
-      ctx.arc(d.x, d.y, 0.9 + i * 0.6, 0, Math.PI * 2);
-      ctx.fill();
+      ctx.globalCompositeOperation = "lighter";
+      for (let k = 0; k < dots.length; k++) {
+        const d = dots[k];
+        const i = d.i;
+        ctx.fillStyle = d.c;
+        ctx.globalAlpha = 0.10 * i;
+        ctx.beginPath();
+        ctx.arc(d.x, d.y, 5 + i * 3, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.globalAlpha = 0.40 * i;
+        ctx.beginPath();
+        ctx.arc(d.x, d.y, 2 + i * 1.2, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.fillStyle = "#ffffff";
+        ctx.globalAlpha = Math.min(1, i);
+        ctx.beginPath();
+        ctx.arc(d.x, d.y, 0.9 + i * 0.6, 0, Math.PI * 2);
+        ctx.fill();
+      }
+      ctx.globalAlpha = 1;
+      ctx.globalCompositeOperation = "source-over";
     }
-    ctx.globalAlpha = 1;
-    ctx.globalCompositeOperation = "source-over";
 
     // (CRT scanlines + vignette are now CSS overlays on body — they were
     // 81% of frame time when done as per-frame fillRects with "overlay"
@@ -1139,8 +1164,364 @@
     }
   }
 
+  // ───────────────────────────────────────────────────────────── WebGPU
+  // Optional GPU path for the line + dot rendering. Replaces the canvas-2D
+  // stroke + arc loops with two instanced draw calls. Activated by
+  // `?renderer=webgpu` in the URL, falls back automatically if init fails.
+  // Game logic, joystick, and crash explosion stay on the canvas-2D layer.
+  const WGSL_LINE = `
+struct VOut {
+  @builtin(position) clip: vec4<f32>,
+  @location(0) color: vec3<f32>,
+  @location(1) px: vec2<f32>,
+  @location(2) start: vec2<f32>,
+  @location(3) end:   vec2<f32>,
+  @location(4) width: f32,
+};
+struct U {
+  viewport: vec2<f32>,
+  glowExtra: f32,
+  _pad: f32,
+};
+@group(0) @binding(0) var<uniform> uni: U;
+
+@vertex
+fn vs(
+  @builtin(vertex_index) vid: u32,
+  @location(0) start: vec2<f32>,
+  @location(1) end:   vec2<f32>,
+  @location(2) color: vec3<f32>,
+  @location(3) width: f32,
+) -> VOut {
+  var corners = array<vec2<f32>, 6>(
+    vec2<f32>(-1.0, -1.0), vec2<f32>( 1.0, -1.0), vec2<f32>( 1.0,  1.0),
+    vec2<f32>(-1.0, -1.0), vec2<f32>( 1.0,  1.0), vec2<f32>(-1.0,  1.0),
+  );
+  let c = corners[vid];
+  let d = end - start;
+  let len = max(length(d), 0.0001);
+  let dir = d / len;
+  let perp = vec2<f32>(-dir.y, dir.x);
+  let halfPad = width * 0.5 + uni.glowExtra;
+  let along  = mix(-halfPad, len + halfPad, (c.x + 1.0) * 0.5);
+  let across = c.y * halfPad;
+  let px = start + dir * along + perp * across;
+  let ndc = vec2<f32>(
+    px.x / uni.viewport.x * 2.0 - 1.0,
+    1.0 - px.y / uni.viewport.y * 2.0,
+  );
+  var o: VOut;
+  o.clip = vec4<f32>(ndc, 0.0, 1.0);
+  o.color = color;
+  o.px = px;
+  o.start = start;
+  o.end = end;
+  o.width = width;
+  return o;
+}
+
+@fragment
+fn fs(in: VOut) -> @location(0) vec4<f32> {
+  // Distance from pixel to line segment.
+  let pa = in.px - in.start;
+  let ba = in.end - in.start;
+  let h = clamp(dot(pa, ba) / max(dot(ba, ba), 0.0001), 0.0, 1.0);
+  let dist = length(pa - ba * h);
+  let halfW = in.width * 0.5;
+
+  // Two layered hard-edged strokes to match the canvas-2D behaviour exactly:
+  //   crisp inner (α 1.0, full width) + mid glow (α 0.26, width × 2.6).
+  // Smoothstep starts at the line edge so the line interior keeps full
+  // intensity (no AA softening of thin lines). Outer edge is smoothed by
+  // ~0.7 CSS px for anti-aliasing.
+  let core = 1.0 - smoothstep(halfW, halfW + 0.7, dist);
+  let glowEdge = halfW * 2.6;
+  let glow = (1.0 - smoothstep(glowEdge, glowEdge + 0.7, dist)) * 0.26;
+  let intensity = core + glow;
+  return vec4<f32>(in.color * intensity, intensity);
+}
+`;
+
+  const WGSL_DOT = `
+struct VOut {
+  @builtin(position) clip: vec4<f32>,
+  @location(0) color: vec3<f32>,
+  @location(1) intensity: f32,
+  @location(2) local: vec2<f32>,
+};
+struct U {
+  viewport: vec2<f32>,
+  _p0: f32,
+  _p1: f32,
+};
+@group(0) @binding(0) var<uniform> uni: U;
+
+@vertex
+fn vs(
+  @builtin(vertex_index) vid: u32,
+  @location(0) center: vec2<f32>,
+  @location(1) color: vec3<f32>,
+  @location(2) intensity: f32,
+) -> VOut {
+  var corners = array<vec2<f32>, 6>(
+    vec2<f32>(-1.0, -1.0), vec2<f32>( 1.0, -1.0), vec2<f32>( 1.0,  1.0),
+    vec2<f32>(-1.0, -1.0), vec2<f32>( 1.0,  1.0), vec2<f32>(-1.0,  1.0),
+  );
+  let c = corners[vid];
+  let haloR = 8.0 + intensity * 4.0;
+  let local = c * haloR;
+  let px = center + local;
+  let ndc = vec2<f32>(
+    px.x / uni.viewport.x * 2.0 - 1.0,
+    1.0 - px.y / uni.viewport.y * 2.0,
+  );
+  var o: VOut;
+  o.clip = vec4<f32>(ndc, 0.0, 1.0);
+  o.color = color;
+  o.intensity = intensity;
+  o.local = local;
+  return o;
+}
+
+@fragment
+fn fs(in: VOut) -> @location(0) vec4<f32> {
+  // Three hard-edged disks (matches canvas-2D's three arc fills):
+  //   halo: r = 5 + i*3,   α 0.10·i, color
+  //   mid:  r = 2 + i*1.2, α 0.40·i, color
+  //   core: r = 0.9 + i*0.6, α min(1, i), white
+  // Smoothstep starting at the disk edge keeps the interior at full
+  // intensity (matches canvas-2D fills) with ~0.5 CSS px AA on the rim.
+  let dist = length(in.local);
+  let i = in.intensity;
+
+  let haloR = 5.0 + i * 3.0;
+  let halo = (1.0 - smoothstep(haloR, haloR + 0.5, dist)) * (0.10 * i);
+
+  let midR = 2.0 + i * 1.2;
+  let mid  = (1.0 - smoothstep(midR, midR + 0.5, dist)) * (0.40 * i);
+
+  let coreR = 0.9 + i * 0.6;
+  let core  = (1.0 - smoothstep(coreR, coreR + 0.5, dist)) * min(1.0, i);
+
+  let rgb = (halo + mid) * in.color + vec3<f32>(core, core, core);
+  return vec4<f32>(rgb, halo + mid + core);
+}
+`;
+
+  async function initWebGPU() {
+    if (!navigator.gpu) {
+      console.warn("[InfiniRacer] WebGPU not supported by this browser");
+      return null;
+    }
+    let adapter, device;
+    try {
+      adapter = await navigator.gpu.requestAdapter();
+      if (!adapter) { console.warn("[InfiniRacer] no WebGPU adapter"); return null; }
+      device = await adapter.requestDevice();
+    } catch (e) {
+      console.warn("[InfiniRacer] WebGPU device request failed:", e);
+      return null;
+    }
+    device.lost.then((info) => {
+      console.warn("[InfiniRacer] WebGPU device lost:", info);
+      webgpu = null;
+    });
+
+    const ctxGpu = gpuCanvas.getContext("webgpu");
+    const format = navigator.gpu.getPreferredCanvasFormat();
+    ctxGpu.configure({ device, format, alphaMode: "opaque" });
+
+    // Uniform buffer (viewport size + glow padding).
+    const uniformBuf = device.createBuffer({
+      size: 16,
+      usage: GPUBufferUsage.UNIFORM | GPUBufferUsage.COPY_DST,
+    });
+    const uniformData = new Float32Array([0, 0, 18.0, 0]);
+
+    const additiveBlend = {
+      color: { srcFactor: "one", dstFactor: "one", operation: "add" },
+      alpha: { srcFactor: "one", dstFactor: "one", operation: "add" },
+    };
+
+    // ─── line pipeline ───
+    const lineModule = device.createShaderModule({ code: WGSL_LINE });
+    const linePipeline = device.createRenderPipeline({
+      layout: "auto",
+      vertex: {
+        module: lineModule,
+        entryPoint: "vs",
+        buffers: [{
+          arrayStride: 32, // 8 + 8 + 12 + 4
+          stepMode: "instance",
+          attributes: [
+            { shaderLocation: 0, offset: 0,  format: "float32x2" }, // start
+            { shaderLocation: 1, offset: 8,  format: "float32x2" }, // end
+            { shaderLocation: 2, offset: 16, format: "float32x3" }, // color rgb
+            { shaderLocation: 3, offset: 28, format: "float32"   }, // width
+          ],
+        }],
+      },
+      fragment: {
+        module: lineModule,
+        entryPoint: "fs",
+        targets: [{ format, blend: additiveBlend }],
+      },
+      primitive: { topology: "triangle-list" },
+    });
+    const lineBindGroup = device.createBindGroup({
+      layout: linePipeline.getBindGroupLayout(0),
+      entries: [{ binding: 0, resource: { buffer: uniformBuf } }],
+    });
+
+    // ─── dot pipeline ───
+    const dotModule = device.createShaderModule({ code: WGSL_DOT });
+    const dotPipeline = device.createRenderPipeline({
+      layout: "auto",
+      vertex: {
+        module: dotModule,
+        entryPoint: "vs",
+        buffers: [{
+          arrayStride: 24, // 8 + 12 + 4
+          stepMode: "instance",
+          attributes: [
+            { shaderLocation: 0, offset: 0,  format: "float32x2" }, // center
+            { shaderLocation: 1, offset: 8,  format: "float32x3" }, // color rgb
+            { shaderLocation: 2, offset: 20, format: "float32"   }, // intensity
+          ],
+        }],
+      },
+      fragment: {
+        module: dotModule,
+        entryPoint: "fs",
+        targets: [{ format, blend: additiveBlend }],
+      },
+      primitive: { topology: "triangle-list" },
+    });
+    const dotBindGroup = device.createBindGroup({
+      layout: dotPipeline.getBindGroupLayout(0),
+      entries: [{ binding: 0, resource: { buffer: uniformBuf } }],
+    });
+
+    // Instance buffers — grow on demand.
+    let lineCap = 0, lineBuf = null, lineCpu = null;
+    function ensureLineBuf(n) {
+      if (n <= lineCap) return;
+      lineCap = Math.max(n, lineCap * 2 || 256);
+      if (lineBuf) lineBuf.destroy();
+      lineBuf = device.createBuffer({
+        size: lineCap * 32,
+        usage: GPUBufferUsage.VERTEX | GPUBufferUsage.COPY_DST,
+      });
+      lineCpu = new Float32Array(lineCap * 8);
+    }
+    let dotCap = 0, dotBuf = null, dotCpu = null;
+    function ensureDotBuf(n) {
+      if (n <= dotCap) return;
+      dotCap = Math.max(n, dotCap * 2 || 512);
+      if (dotBuf) dotBuf.destroy();
+      dotBuf = device.createBuffer({
+        size: dotCap * 24,
+        usage: GPUBufferUsage.VERTEX | GPUBufferUsage.COPY_DST,
+      });
+      dotCpu = new Float32Array(dotCap * 6);
+    }
+
+    // hex "#rrggbb" → [r, g, b] floats. Cached.
+    const colorCache = new Map();
+    function hexToRGB(hex) {
+      let v = colorCache.get(hex);
+      if (v) return v;
+      v = [
+        parseInt(hex.slice(1, 3), 16) / 255,
+        parseInt(hex.slice(3, 5), 16) / 255,
+        parseInt(hex.slice(5, 7), 16) / 255,
+      ];
+      colorCache.set(hex, v);
+      return v;
+    }
+
+    return {
+      resize(w, h) {
+        uniformData[0] = w;
+        uniformData[1] = h;
+        device.queue.writeBuffer(uniformBuf, 0, uniformData);
+      },
+      drawFrame(beams, dots) {
+        ensureLineBuf(beams.length);
+        for (let i = 0; i < beams.length; i++) {
+          const b = beams[i];
+          const c = hexToRGB(b.c);
+          const o = i * 8;
+          lineCpu[o    ] = b.x1;
+          lineCpu[o + 1] = b.y1;
+          lineCpu[o + 2] = b.x2;
+          lineCpu[o + 3] = b.y2;
+          lineCpu[o + 4] = c[0];
+          lineCpu[o + 5] = c[1];
+          lineCpu[o + 6] = c[2];
+          lineCpu[o + 7] = b.w;
+        }
+        if (beams.length > 0) {
+          device.queue.writeBuffer(lineBuf, 0, lineCpu, 0, beams.length * 8);
+        }
+        ensureDotBuf(dots.length);
+        for (let i = 0; i < dots.length; i++) {
+          const d = dots[i];
+          const c = hexToRGB(d.c);
+          const o = i * 6;
+          dotCpu[o    ] = d.x;
+          dotCpu[o + 1] = d.y;
+          dotCpu[o + 2] = c[0];
+          dotCpu[o + 3] = c[1];
+          dotCpu[o + 4] = c[2];
+          dotCpu[o + 5] = d.i;
+        }
+        if (dots.length > 0) {
+          device.queue.writeBuffer(dotBuf, 0, dotCpu, 0, dots.length * 6);
+        }
+
+        const encoder = device.createCommandEncoder();
+        const view = ctxGpu.getCurrentTexture().createView();
+        const pass = encoder.beginRenderPass({
+          colorAttachments: [{
+            view,
+            clearValue: { r: 4 / 255, g: 6 / 255, b: 10 / 255, a: 1 },
+            loadOp: "clear",
+            storeOp: "store",
+          }],
+        });
+        if (beams.length > 0) {
+          pass.setPipeline(linePipeline);
+          pass.setBindGroup(0, lineBindGroup);
+          pass.setVertexBuffer(0, lineBuf);
+          pass.draw(6, beams.length);
+        }
+        if (dots.length > 0) {
+          pass.setPipeline(dotPipeline);
+          pass.setBindGroup(0, dotBindGroup);
+          pass.setVertexBuffer(0, dotBuf);
+          pass.draw(6, dots.length);
+        }
+        pass.end();
+        device.queue.submit([encoder.finish()]);
+      },
+    };
+  }
+
   // ───────────────────────────────────────────────────────────── loop
   ensureTrackTo(2400);
+
+  if (WANT_GPU) {
+    initWebGPU().then((r) => {
+      if (r) {
+        webgpu = r;
+        webgpu.resize(W, H);
+        console.log("[InfiniRacer] WebGPU renderer active");
+      } else {
+        console.warn("[InfiniRacer] WebGPU init failed; canvas-2D fallback in use");
+      }
+    });
+  }
 
   let last = performance.now();
   let trimAccum = 0;

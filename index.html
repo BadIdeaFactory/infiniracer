@@ -359,6 +359,71 @@
 
     <section class="versions">
 
+      <!-- v012 -->
+      <article class="ver acc-4">
+        <div class="ver-header">
+          <div>
+            <div class="ver-no">V012</div>
+            <div class="ver-tag">★ rollback to canvas-2D ★</div>
+          </div>
+          <a class="ver-play" href="v012/">▶ PLAY V012</a>
+        </div>
+        <div class="step">
+          <h3>PROMPT</h3>
+          <blockquote>do 2  <em>(option 2 from the v011 follow-up: rollback)</em></blockquote>
+          <h3>CHANGES</h3>
+          <ul>
+            <li>WebGPU code path removed from <code>latest/</code> — back to single-canvas, canvas-2D-only rendering</li>
+            <li>Stripped: WGSL shaders, <code>initWebGPU</code>, two-canvas stack, <code>?renderer=webgpu</code> flag, render-loop branches, resize hooks for the GPU canvas</li>
+            <li>v011 stays frozen as the "we tried this" reference. The shader work + integration glue is preserved there if we want to revisit when scene density actually outgrows canvas-2D</li>
+            <li>Net code delta: <code>game.js</code> ~1500 lines → ~1200 lines; <code>styles.css</code> back to single canvas rule; <code>index.html</code> back to single canvas element</li>
+          </ul>
+          <h3>WHY</h3>
+          <ul>
+            <li>At v010 scene density on a fast Mac, both renderers easily hit the 60 fps cap, so the WebGPU win is invisible — it's <em>headroom</em> for content we don't have yet</li>
+            <li>The shader-rendered output looked slightly less crisp than the canvas-2D layered strokes. A second shader pass tightened it but at that point we're maintaining two render paths for parity, not headroom</li>
+            <li>Decision: pay the perf cost when there's content that needs it; until then, the simpler single-path canvas-2D code wins on maintainability</li>
+          </ul>
+        </div>
+      </article>
+
+      <!-- v011 -->
+      <article class="ver acc-3">
+        <div class="ver-header">
+          <div>
+            <div class="ver-no">V011</div>
+            <div class="ver-tag">★ webgpu opt-in ★</div>
+          </div>
+          <a class="ver-play" href="v011/?renderer=webgpu">▶ PLAY V011 (WebGPU)</a>
+        </div>
+        <div class="step">
+          <h3>PROMPT</h3>
+          <blockquote>I still feel like if we use webgpu we'd free ourselves up to worry less about performance, we can always rollback if it doesn't work</blockquote>
+          <h3>CHANGES</h3>
+          <ul>
+            <li><strong>Optional WebGPU renderer for beams + dots.</strong> Activated by <code>?renderer=webgpu</code> in the URL; falls back automatically to canvas 2D if <code>navigator.gpu</code> is missing or device init fails. Game logic, joystick, crash explosion, and HUD stay on the canvas-2D layer</li>
+            <li>Two-canvas stack: <code>&lt;canvas id="game-gpu"&gt;</code> at z-index 0 (WebGPU output, opaque, full screen) sits behind the existing <code>&lt;canvas id="game"&gt;</code> at z-index 1 (canvas-2D, cleared transparent when GPU is active so the layer below shows through)</li>
+            <li><strong>Line shader (WGSL):</strong> one instance per beam, vertex shader expands a quad along the line with rounded-cap glow padding, fragment shader computes capsule SDF and outputs <code>color × (crisp + exp-falloff glow)</code> with additive blend. Single draw call replaces the 2-pass canvas-2D stroke loop</li>
+            <li><strong>Dot shader (WGSL):</strong> billboarded quad per dot, fragment evaluates halo + mid + hot-core layers from one radial SDF in a single draw call. Replaces the 3-fill-per-dot canvas-2D loop</li>
+            <li>Hex-color → RGBA float cache so per-frame instance buffer marshalling is one Map lookup per beam/dot</li>
+            <li>Per-frame instance buffers grow on demand (start 256 lines / 512 dots, double when needed) and are reused across frames</li>
+            <li><code>device.lost</code> handler clears the <code>webgpu</code> reference so we automatically fall back to canvas 2D if the GPU disappears mid-session</li>
+            <li>Canvas-2D crisp beam pass deduplicated (an earlier edit had accidentally left a duplicate copy)</li>
+          </ul>
+          <h3>OPENING NOTES</h3>
+          <ul>
+            <li>To opt in: append <code>?renderer=webgpu</code> to the URL (the PLAY button on this card already does)</li>
+            <li>Without the flag, the game runs the same canvas-2D path as v010</li>
+            <li>If your browser doesn't support WebGPU (Firefox &lt; 141, Safari &lt; 26, Chromium without GPU), it logs a warning and silently falls back</li>
+          </ul>
+          <h3>SHADER CRISPNESS FIX</h3>
+          <ul>
+            <li>First pass used exponential glow falloff (<code>exp(-d * k)</code>) which bled softer than canvas-2D's hard-edged 2-pass stroke. Switched both shaders to <strong>smoothstep with hard edges</strong> matching the canvas-2D layers exactly: line crisp inner (α 1) + mid-glow ring (α 0.26) at width × 2.6; dot halo + mid + white core as three hard-edged disks. Smoothstep starts at the disk/line edge so the interior keeps full intensity (no AA softening of thin lines)</li>
+            <li><strong>Performance honesty note:</strong> at 60 fps cap on a fast Mac, both renderers easily hit vsync — the WebGPU win is <em>headroom</em>, only visible if scene density grows past what canvas-2D can sustain. If that headroom isn't currently valuable, this version can be ignored and v010 remains the active baseline</li>
+          </ul>
+        </div>
+      </article>
+
       <!-- v010 -->
       <article class="ver acc-2">
         <div class="ver-header">
