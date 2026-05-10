@@ -1,0 +1,711 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover" />
+  <title>INFINI RACER ✦ THE VERSIONS</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Press+Start+2P&family=VT323&family=Major+Mono+Display&display=swap" rel="stylesheet" />
+  <style>
+    :root {
+      --bg: #07000f;
+      --paper: #0a0218;
+      --hot1: #ff00aa;
+      --hot2: #00f0ff;
+      --hot3: #ffe600;
+      --hot4: #6cff00;
+      --hot5: #ff7700;
+    }
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    html, body {
+      background: var(--bg);
+      color: #fff;
+      font-family: "VT323", "Courier New", monospace;
+      font-size: 22px;
+      letter-spacing: 0.04em;
+      overflow-x: hidden;
+      min-height: 100%;
+    }
+    body {
+      background:
+        radial-gradient(circle at 15% 10%, rgba(255, 0, 170, 0.18), transparent 35%),
+        radial-gradient(circle at 85% 18%, rgba(0, 240, 255, 0.18), transparent 38%),
+        radial-gradient(circle at 50% 95%, rgba(255, 230, 0, 0.12), transparent 40%),
+        var(--bg);
+    }
+
+    /* ── animated psychedelic backdrop ───────────────────────────── */
+    canvas#psych {
+      position: fixed; inset: 0;
+      width: 100vw; height: 100vh;
+      z-index: 0;
+      pointer-events: none;
+      mix-blend-mode: screen;
+    }
+
+    /* moving diagonal stripe overlay (Llamasoft-y stripe rave) */
+    body::before {
+      content: "";
+      position: fixed; inset: -10vh -10vw;
+      pointer-events: none;
+      z-index: 1;
+      background: repeating-linear-gradient(
+        45deg,
+        rgba(255, 0, 170, 0.06) 0 6px,
+        transparent 6px 22px,
+        rgba(0, 240, 255, 0.06) 22px 28px,
+        transparent 28px 44px,
+        rgba(255, 230, 0, 0.05) 44px 50px,
+        transparent 50px 70px
+      );
+      animation: scroll-stripes 16s linear infinite;
+      mix-blend-mode: screen;
+      filter: blur(0.4px);
+    }
+    /* CRT scanlines on top of everything (subtle) */
+    body::after {
+      content: "";
+      position: fixed; inset: 0;
+      pointer-events: none;
+      z-index: 90;
+      background: repeating-linear-gradient(
+        to bottom,
+        rgba(255, 255, 255, 0.04) 0 1px,
+        transparent 1px 3px
+      );
+      mix-blend-mode: overlay;
+    }
+
+    @keyframes scroll-stripes {
+      from { transform: translate(0, 0); }
+      to   { transform: translate(-220px, 220px); }
+    }
+
+    main {
+      position: relative;
+      z-index: 5;
+      padding: 5vh 5vw 12vh;
+      max-width: 1200px;
+      margin: 0 auto;
+    }
+
+    /* ── HERO ────────────────────────────────────────────────────── */
+    .hero { text-align: center; padding: 6vh 0 4vh; position: relative; }
+
+    .glyphs {
+      font-family: "Major Mono Display", monospace;
+      letter-spacing: 0.6em;
+      font-size: 14px;
+      color: var(--hot2);
+      text-shadow: 0 0 14px var(--hot2), 0 0 28px var(--hot2);
+      animation: hue-cycle 6s linear infinite;
+      margin-bottom: 18px;
+    }
+
+    h1.title {
+      font-family: "Press Start 2P", monospace;
+      font-size: clamp(34px, 8vw, 96px);
+      line-height: 1.05;
+      letter-spacing: 0.06em;
+      display: inline-block;
+      margin: 0 auto;
+    }
+    h1.title span {
+      display: inline-block;
+      color: var(--hot1);
+      text-shadow:
+        0 0 12px currentColor,
+        0 0 28px currentColor,
+        0 0 56px currentColor,
+        4px 4px 0 #001;
+      animation:
+        hue-cycle 4s linear infinite,
+        bob 1.6s ease-in-out infinite;
+      animation-delay:
+        calc(var(--i, 0) * -0.18s),
+        calc(var(--i, 0) * -0.10s);
+    }
+    h1.title .gap { width: 0.6em; }
+
+    @keyframes hue-cycle {
+      to { filter: hue-rotate(360deg); }
+    }
+    @keyframes bob {
+      0%, 100% { transform: translateY(0) rotate(0); }
+      50%      { transform: translateY(-8px) rotate(-1.2deg); }
+    }
+
+    .subtitle {
+      margin-top: 18px;
+      font-family: "Press Start 2P", monospace;
+      font-size: clamp(11px, 1.6vw, 16px);
+      letter-spacing: 0.45em;
+      color: var(--hot3);
+      text-shadow: 0 0 10px var(--hot3), 0 0 20px var(--hot3);
+      animation: pulse 1.6s ease-in-out infinite;
+    }
+    @keyframes pulse {
+      0%, 100% { opacity: 0.55; }
+      50%      { opacity: 1; }
+    }
+
+    /* ── LATEST CTA ──────────────────────────────────────────────── */
+    .cta-latest {
+      display: block;
+      max-width: 720px;
+      margin: 48px auto 64px;
+      padding: 28px 24px;
+      text-align: center;
+      text-decoration: none;
+      color: #fff;
+      border: 3px solid var(--hot2);
+      box-shadow:
+        0 0 24px var(--hot2),
+        inset 0 0 24px rgba(0, 240, 255, 0.18);
+      background:
+        linear-gradient(135deg, rgba(255, 0, 170, 0.18), rgba(0, 240, 255, 0.18));
+      position: relative;
+      overflow: hidden;
+      transition: transform 0.18s ease;
+    }
+    .cta-latest:hover { transform: translateY(-3px) scale(1.01); }
+    .cta-latest::before {
+      content: "";
+      position: absolute; inset: -50%;
+      background: conic-gradient(from 0deg,
+        var(--hot1), var(--hot2), var(--hot3), var(--hot4), var(--hot5), var(--hot1));
+      opacity: 0.20;
+      filter: blur(40px);
+      animation: spin 12s linear infinite;
+      z-index: -1;
+    }
+    @keyframes spin { to { transform: rotate(360deg); } }
+    .cta-latest .l-tag {
+      font-family: "Press Start 2P", monospace;
+      font-size: 12px;
+      letter-spacing: 0.4em;
+      color: var(--hot3);
+      text-shadow: 0 0 10px var(--hot3);
+    }
+    .cta-latest .l-name {
+      display: block;
+      font-family: "Press Start 2P", monospace;
+      font-size: clamp(22px, 4vw, 44px);
+      letter-spacing: 0.15em;
+      margin: 12px 0 6px;
+      color: #fff;
+      text-shadow: 0 0 16px var(--hot2), 0 0 32px var(--hot2);
+    }
+    .cta-latest .l-sub {
+      font-family: "VT323", monospace;
+      font-size: 22px;
+      color: var(--hot1);
+      text-shadow: 0 0 10px var(--hot1);
+      letter-spacing: 0.2em;
+    }
+
+    /* ── VERSIONS GRID ───────────────────────────────────────────── */
+    .versions {
+      display: flex;
+      flex-direction: column;
+      gap: 28px;
+    }
+
+    article.ver {
+      position: relative;
+      padding: 24px 26px 26px;
+      border: 2px solid;
+      background: linear-gradient(180deg, rgba(10, 2, 24, 0.85), rgba(7, 0, 15, 0.92));
+      backdrop-filter: blur(2px);
+      box-shadow: 0 0 30px rgba(0, 0, 0, 0.6);
+    }
+    article.ver::before {
+      content: "";
+      position: absolute; inset: -2px;
+      pointer-events: none;
+      background: conic-gradient(from 0deg, transparent, currentColor, transparent 60%);
+      opacity: 0.18;
+      animation: spin 10s linear infinite;
+      z-index: -1;
+      filter: blur(6px);
+    }
+
+    .ver-header {
+      display: flex;
+      align-items: baseline;
+      justify-content: space-between;
+      gap: 20px;
+      flex-wrap: wrap;
+      padding-bottom: 18px;
+      border-bottom: 1px dashed currentColor;
+      margin-bottom: 18px;
+    }
+    .ver-no {
+      font-family: "Press Start 2P", monospace;
+      font-size: clamp(22px, 3.6vw, 36px);
+      letter-spacing: 0.1em;
+      text-shadow: 0 0 14px currentColor, 0 0 28px currentColor;
+    }
+    .ver-tag {
+      font-family: "VT323", monospace;
+      font-size: 22px;
+      letter-spacing: 0.2em;
+      opacity: 0.8;
+    }
+    .ver-play {
+      font-family: "Press Start 2P", monospace;
+      font-size: 11px;
+      padding: 10px 14px;
+      letter-spacing: 0.25em;
+      text-decoration: none;
+      color: #fff;
+      border: 2px solid currentColor;
+      background: rgba(0, 0, 0, 0.4);
+      box-shadow: 0 0 14px currentColor, inset 0 0 14px rgba(255,255,255,0.06);
+      transition: transform 0.15s ease;
+    }
+    .ver-play:hover {
+      transform: translate(-2px, -2px);
+      background: rgba(255, 255, 255, 0.08);
+    }
+
+    .step h3 {
+      font-family: "Press Start 2P", monospace;
+      font-size: 11px;
+      letter-spacing: 0.3em;
+      margin: 14px 0 8px;
+      color: var(--hot3);
+      text-shadow: 0 0 8px var(--hot3);
+    }
+    .step blockquote {
+      font-family: "VT323", monospace;
+      font-size: 22px;
+      line-height: 1.35;
+      padding: 12px 16px;
+      border-left: 3px solid currentColor;
+      background: rgba(255, 255, 255, 0.04);
+      color: #f8f8ff;
+      white-space: pre-wrap;
+    }
+    .step blockquote::before { content: "⌜ "; opacity: 0.6; }
+    .step blockquote::after  { content: " ⌟"; opacity: 0.6; }
+
+    .step ul {
+      margin-top: 10px;
+      padding-left: 0;
+      list-style: none;
+    }
+    .step ul li {
+      font-family: "VT323", monospace;
+      font-size: 21px;
+      line-height: 1.45;
+      padding: 3px 0 3px 28px;
+      position: relative;
+      color: #e9eaff;
+    }
+    .step ul li::before {
+      content: "▸";
+      position: absolute;
+      left: 6px;
+      color: currentColor;
+      text-shadow: 0 0 6px currentColor;
+    }
+    .step ul li code {
+      font-family: "VT323", monospace;
+      background: rgba(255, 255, 255, 0.08);
+      padding: 0 4px;
+      border-radius: 2px;
+      color: var(--hot3);
+    }
+
+    /* alternating accent palettes per card */
+    .acc-1 { color: var(--hot1); }
+    .acc-2 { color: var(--hot2); }
+    .acc-3 { color: var(--hot3); }
+    .acc-4 { color: var(--hot4); }
+    .acc-5 { color: var(--hot5); }
+
+    /* ── FOOTER ──────────────────────────────────────────────────── */
+    footer {
+      margin-top: 60px;
+      text-align: center;
+      font-family: "VT323", monospace;
+      font-size: 18px;
+      color: rgba(255, 255, 255, 0.5);
+      letter-spacing: 0.2em;
+      line-height: 1.7;
+    }
+    footer .neon { color: var(--hot1); text-shadow: 0 0 10px var(--hot1); }
+  </style>
+</head>
+<body>
+  <canvas id="psych"></canvas>
+
+  <main>
+    <header class="hero">
+      <div class="glyphs">▲ ◆ ▼ ✦ ◇ ◆ ▼ ▲ ✦ ◆ ▼ ▲ ◆ ✦</div>
+      <h1 class="title" aria-label="Infini Racer">
+        <span style="--i:0">I</span><span style="--i:1">N</span><span style="--i:2">F</span><span style="--i:3">I</span><span style="--i:4">N</span><span style="--i:5">I</span><span class="gap">&nbsp;</span><span style="--i:6">R</span><span style="--i:7">A</span><span style="--i:8">C</span><span style="--i:9">E</span><span style="--i:10">R</span>
+      </h1>
+      <p class="subtitle">⚡ THE VERSIONS ⚡ A LIVING SCROLL OF EVERY ITERATION ⚡</p>
+    </header>
+
+    <a class="cta-latest" href="latest/">
+      <span class="l-tag">▶ NOW PLAYING</span>
+      <span class="l-name">LATEST</span>
+      <span class="l-sub">live working copy ✦ always the bleeding edge</span>
+    </a>
+
+    <section class="versions">
+
+      <!-- v009 -->
+      <article class="ver acc-1">
+        <div class="ver-header">
+          <div>
+            <div class="ver-no">V009</div>
+            <div class="ver-tag">★ different seed ★</div>
+          </div>
+          <a class="ver-play" href="v009/">▶ PLAY V009</a>
+        </div>
+        <div class="step">
+          <h3>PROMPT</h3>
+          <blockquote>I don't like this track. change the seed</blockquote>
+          <h3>CHANGES</h3>
+          <ul>
+            <li><code>worldSeed</code> 1 → 7341 in both the initial assignment and <code>commitReset()</code></li>
+          </ul>
+        </div>
+      </article>
+
+      <!-- v008 -->
+      <article class="ver acc-2">
+        <div class="ver-header">
+          <div>
+            <div class="ver-no">V008</div>
+            <div class="ver-tag">★ deterministic world ★</div>
+          </div>
+          <a class="ver-play" href="v008/">▶ PLAY V008</a>
+        </div>
+        <div class="step">
+          <h3>PROMPT</h3>
+          <blockquote>just do the first thing</blockquote>
+          <h3>CHANGES</h3>
+          <ul>
+            <li>World seed pinned to <code>1</code> instead of being randomized on load + on reset — same track every run</li>
+            <li>Same fixed seed used after a crash so the world is identical post-reset</li>
+          </ul>
+        </div>
+      </article>
+
+      <!-- v007 -->
+      <article class="ver acc-3">
+        <div class="ver-header">
+          <div>
+            <div class="ver-no">V007</div>
+            <div class="ver-tag">★ anti-magnetic edges ★</div>
+          </div>
+          <a class="ver-play" href="v007/">▶ PLAY V007</a>
+        </div>
+        <div class="step">
+          <h3>PROMPT</h3>
+          <blockquote>ok the edges of the track are slightly repellent, almost antimagnetic but if you go too fast this won't be enought to stop you going out, the closer to the edges the more you feel it though</blockquote>
+          <h3>CHANGES</h3>
+          <ul>
+            <li>Quadratic edge-repulsion velocity field — <code>proximity²·EDGE_REPEL_MAX</code> (620 u/s) added laterally toward the centerline</li>
+            <li>Repel zone <code>min(75, hw·0.6)</code> so narrow tracks shrink the field with them</li>
+            <li>Slow drift is corrected; fast perpendicular runs (lateral component up to 1600 u/s) punch through</li>
+            <li>Visualisation: nearest edge thickens with proximity + pulsing inward "field ticks" on every nearby segment</li>
+            <li><code>car.edgeProximity</code> + <code>car.edgeSide</code> exposed for the renderer</li>
+          </ul>
+        </div>
+      </article>
+
+      <!-- v006 -->
+      <article class="ver acc-4">
+        <div class="ver-header">
+          <div>
+            <div class="ver-no">V006</div>
+            <div class="ver-tag">★ slow-mo wipeout ★</div>
+          </div>
+          <a class="ver-play" href="v006/">▶ PLAY V006</a>
+        </div>
+        <div class="step">
+          <h3>PROMPT</h3>
+          <blockquote>ok when we crash we should see a spectacular explosion in slow motion</blockquote>
+          <h3>CHANGES</h3>
+          <ul>
+            <li>Crash sequence runs in slow-mo for 2.4 real seconds via a global <code>timeScale</code> (curve <code>0.10 + t^2.6 · 0.90</code>)</li>
+            <li>Car shatters into ~17 rotating line-shard debris pieces flying outward, each with phosphor-dot endpoints</li>
+            <li>90 radial sparks (red / yellow / orange / white) with halos + hot cores</li>
+            <li>5 staggered shockwave rings, each with halo + mid-glow + crisp ring passes</li>
+            <li>Initial radial bloom (white→amber→red), then darkening vignette while debris flies</li>
+            <li>WIPEOUT title + frozen final score in Press Start 2P, mid-screen</li>
+            <li>HUD score hidden during the crash so it doesn't fight the in-canvas readout</li>
+            <li><code>commitReset()</code> regenerates the world after the spectacle ends</li>
+          </ul>
+        </div>
+      </article>
+
+      <!-- v005 -->
+      <article class="ver acc-5">
+        <div class="ver-header">
+          <div>
+            <div class="ver-no">V005</div>
+            <div class="ver-tag">★ score + plateau widths ★</div>
+          </div>
+          <a class="ver-play" href="v005/">▶ PLAY V005</a>
+        </div>
+        <div class="step">
+          <h3>PROMPT</h3>
+          <blockquote>ok vary the size of the track more in dimension although we can have lon stretches the same size, include the score in a font reminiscent of asteroids, top centre larger than the distance font, the score should be speed multiplied by distance, use commas if the score gets large.</blockquote>
+          <h3>CHANGES</h3>
+          <ul>
+            <li>Width range expanded to 38–230; double-smoothstep on a slow noise (~5500u wavelength) gives long flat plateaus that snap between bands</li>
+            <li>Spawn area clamped to ≥55% of max width so you never start in a pinch</li>
+            <li>Press Start 2P (Google Fonts) loaded for the score readout</li>
+            <li>Score = <code>floor(car.speed × distance)</code>, formatted via <code>toLocaleString("en-US")</code> for commas</li>
+            <li>SCORE element top-center, <code>clamp(26px, 4.4vw, 56px)</code> with cyan triple-glow</li>
+            <li><code>BEST</code> now tracks max score (new <code>infiniracer.bestScore</code> localStorage key) and is also comma-formatted</li>
+          </ul>
+        </div>
+      </article>
+
+      <!-- v004 -->
+      <article class="ver acc-1">
+        <div class="ver-header">
+          <div>
+            <div class="ver-no">V004</div>
+            <div class="ver-tag">★ joystick + new keys ★</div>
+          </div>
+          <a class="ver-play" href="v004/">▶ PLAY V004</a>
+        </div>
+        <div class="step">
+          <h3>PROMPT</h3>
+          <blockquote>in the bottom fith of the screen show a joystick I can use to control the ship with the mouse, also change the lettered controls to q up a brake o left and p right</blockquote>
+          <h3>CHANGES</h3>
+          <ul>
+            <li>Vector-styled virtual joystick in the bottom fifth — drag with mouse or touch, knob springs back on release</li>
+            <li>Outer halo ring + cardinal phosphor ticks + amber stem + hot core knob; <code>THROTTLE / BRAKE / ◀ STEER ▶</code> labels</li>
+            <li>Keyboard remap: throttle <code>Q</code>/<code>↑</code>, brake <code>A</code>/<code>↓</code>, left <code>O</code>/<code>←</code>, right <code>P</code>/<code>→</code></li>
+            <li>Unified analog input pipeline (<code>readInput()</code>) — keyboard ORed with stick magnitude per axis</li>
+            <li>Thrust flame intensity now scales with analog throttle</li>
+            <li>Cursor changed back from <code>none</code> to <code>crosshair</code>; <code>touch-action: none</code> to stop mobile fighting the stick</li>
+            <li>Start overlay updated with the new controls + "OR DRAG THE JOYSTICK"</li>
+          </ul>
+        </div>
+      </article>
+
+      <!-- v003 -->
+      <article class="ver acc-2">
+        <div class="ver-header">
+          <div>
+            <div class="ver-no">V003</div>
+            <div class="ver-tag">★ much faster + variable width ★</div>
+          </div>
+          <a class="ver-play" href="v003/">▶ PLAY V003</a>
+        </div>
+        <div class="step">
+          <h3>PROMPT</h3>
+          <blockquote>ok allow the player to go much much faster and alter the width of the track randomly. when the player goes off the track reset the distance</blockquote>
+          <h3>CHANGES</h3>
+          <ul>
+            <li><code>MAX_SPEED</code> 620 → 1600, <code>ACCEL</code> 140 → 280, <code>BRAKE_DECEL</code> 320 → 520</li>
+            <li>Per-segment <code>hw</code> (50–160) driven by two slow noise octaves; spawn clamped wide</li>
+            <li>Off-track now triggers a full run reset — world seed re-randomized, track + scenery cleared, car teleported home</li>
+            <li>Brief red/white WIPEOUT flash with text on reset; best distance preserved</li>
+            <li>Distance markers + scenery offsets switched from the old constant to per-segment <code>seg.hw</code></li>
+          </ul>
+        </div>
+      </article>
+
+      <!-- v002 -->
+      <article class="ver acc-3">
+        <div class="ver-header">
+          <div>
+            <div class="ver-no">V002</div>
+            <div class="ver-tag">★ scaling car + faster ★</div>
+          </div>
+          <a class="ver-play" href="v002/">▶ PLAY V002</a>
+        </div>
+        <div class="step">
+          <h3>PROMPT</h3>
+          <blockquote>ok cool, the vehicle should also alter size when zooming out and make it possible to go faster</blockquote>
+          <h3>CHANGES</h3>
+          <ul>
+            <li>Car geometry scaled by world zoom in <code>p(x, y)</code> so the ship shrinks as the camera pulls back; line widths stay constant (vector-tube convention)</li>
+            <li><code>MAX_SPEED</code> 360 → 620, <code>ACCEL</code> 95 → 140, <code>BRAKE_DECEL</code> 220 → 320</li>
+            <li>Off-road drag rebalanced to <code>BRAKE_DECEL · 0.55</code> so it still bites at the new top speed</li>
+          </ul>
+        </div>
+      </article>
+
+      <!-- v001 -->
+      <article class="ver acc-4">
+        <div class="ver-header">
+          <div>
+            <div class="ver-no">V001</div>
+            <div class="ver-tag">★ genesis ★</div>
+          </div>
+          <a class="ver-play" href="v001/">▶ PLAY V001</a>
+        </div>
+        <div class="step">
+          <h3>PROMPT</h3>
+          <blockquote>ok in v001 dir create a game using only js html and css, the game is infini racer where you control a vehicle through a landscape that is purposefully minimal, in the vector style of the original asteroid game from the 70s/80s. where lines on landscape object or vehicle intersect there is a more brilliant point or dot. This is a top down racer where the vehicle appears static but the course moves and zooms out the faster you go. You can also look at other vector/retro games for inspiration.</blockquote>
+          <h3>CHANGES</h3>
+          <ul>
+            <li>Vector top-down racer: car drawn at screen-center pointing up; the world rotates + translates around it</li>
+            <li>Procedural infinite track from two octaves of smooth noise; deterministic chunked scenery (3–6-sided wireframes)</li>
+            <li>3-pass beam rendering — wide soft glow → medium glow → crisp line — for a phosphor-tube feel</li>
+            <li>Phosphor endpoint dots at every line endpoint plus extra-bright cross-group line-intersection dots</li>
+            <li>Camera zoom-out as <code>1.05 / (1 + speed_ratio · 1.35)</code></li>
+            <li>CRT scanline overlay + radial vignette</li>
+            <li>Off-road drag, distance + speed HUD, best distance in <code>localStorage</code></li>
+          </ul>
+        </div>
+      </article>
+
+    </section>
+
+    <footer>
+      <div>★ INFINI RACER ★ vector-tube racing in the spirit of 1979 ★</div>
+      <div>made with HTML &middot; CSS &middot; JS &middot; nothing else</div>
+      <div class="neon">▲ ◆ ▼ ✦ ◇ ◆ ▼ ▲ ✦ ◆ ▼ ▲</div>
+    </footer>
+  </main>
+
+  <script>
+    // ── psychedelic particle backdrop ─────────────────────────────
+    // Inspired by Llamasoft / Jeff Minter — bright moving phosphor dots,
+    // hue-cycling, additive blending, with occasional shooting streaks.
+    (() => {
+      const c = document.getElementById("psych");
+      const ctx = c.getContext("2d");
+      let W, H, dpr;
+      function resize() {
+        dpr = Math.min(window.devicePixelRatio || 1, 2);
+        W = window.innerWidth; H = window.innerHeight;
+        c.width = Math.floor(W * dpr);
+        c.height = Math.floor(H * dpr);
+        c.style.width = W + "px";
+        c.style.height = H + "px";
+      }
+      window.addEventListener("resize", resize);
+      resize();
+
+      const N = 220;
+      const dots = [];
+      for (let i = 0; i < N; i++) {
+        dots.push({
+          x: Math.random() * W,
+          y: Math.random() * H,
+          vx: (Math.random() - 0.5) * 90,
+          vy: (Math.random() - 0.5) * 90,
+          h: Math.random() * 360,
+          s: 1.2 + Math.random() * 4.2,
+          phase: Math.random() * Math.PI * 2,
+        });
+      }
+
+      const streaks = [];
+      function spawnStreak() {
+        const a = Math.random() * Math.PI * 2;
+        streaks.push({
+          x: W * 0.5 + Math.cos(a) * 10,
+          y: H * 0.5 + Math.sin(a) * 10,
+          vx: Math.cos(a) * (520 + Math.random() * 380),
+          vy: Math.sin(a) * (520 + Math.random() * 380),
+          life: 1,
+          h: Math.random() * 360,
+          tail: [],
+        });
+      }
+
+      let last = performance.now();
+      let t = 0;
+      let nextStreak = 0.6;
+
+      function frame(now) {
+        const dt = Math.min(0.05, (now - last) / 1000);
+        last = now;
+        t += dt;
+
+        // soft trail
+        ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+        ctx.fillStyle = "rgba(7, 0, 15, 0.16)";
+        ctx.fillRect(0, 0, W, H);
+
+        ctx.globalCompositeOperation = "lighter";
+
+        // dots
+        for (const d of dots) {
+          d.x += d.vx * dt;
+          d.y += d.vy * dt;
+          if (d.x < -10) d.x = W + 10;
+          if (d.x > W + 10) d.x = -10;
+          if (d.y < -10) d.y = H + 10;
+          if (d.y > H + 10) d.y = -10;
+          d.h = (d.h + 36 * dt) % 360;
+          const flick = 0.6 + 0.4 * Math.sin(t * 5 + d.phase);
+          ctx.fillStyle = `hsl(${d.h}, 100%, 60%)`;
+          ctx.globalAlpha = 0.18 * flick;
+          ctx.beginPath();
+          ctx.arc(d.x, d.y, d.s * 4, 0, Math.PI * 2);
+          ctx.fill();
+          ctx.globalAlpha = 0.5 * flick;
+          ctx.beginPath();
+          ctx.arc(d.x, d.y, d.s * 1.6, 0, Math.PI * 2);
+          ctx.fill();
+          ctx.fillStyle = "#ffffff";
+          ctx.globalAlpha = flick;
+          ctx.beginPath();
+          ctx.arc(d.x, d.y, d.s * 0.55, 0, Math.PI * 2);
+          ctx.fill();
+        }
+        ctx.globalAlpha = 1;
+
+        // streaks
+        nextStreak -= dt;
+        if (nextStreak <= 0) {
+          spawnStreak();
+          nextStreak = 0.5 + Math.random() * 1.4;
+        }
+        for (let i = streaks.length - 1; i >= 0; i--) {
+          const s = streaks[i];
+          s.tail.push({ x: s.x, y: s.y });
+          if (s.tail.length > 14) s.tail.shift();
+          s.x += s.vx * dt;
+          s.y += s.vy * dt;
+          s.life -= dt * 0.55;
+          if (s.life <= 0 || s.x < -50 || s.x > W + 50 || s.y < -50 || s.y > H + 50) {
+            streaks.splice(i, 1);
+            continue;
+          }
+          ctx.strokeStyle = `hsl(${s.h}, 100%, 65%)`;
+          ctx.lineWidth = 2.5;
+          ctx.globalAlpha = s.life * 0.85;
+          ctx.beginPath();
+          for (let k = 0; k < s.tail.length - 1; k++) {
+            const p1 = s.tail[k], p2 = s.tail[k + 1];
+            if (k === 0) ctx.moveTo(p1.x, p1.y);
+            ctx.lineTo(p2.x, p2.y);
+          }
+          ctx.lineTo(s.x, s.y);
+          ctx.stroke();
+          // hot tip
+          ctx.fillStyle = "#ffffff";
+          ctx.globalAlpha = s.life;
+          ctx.beginPath();
+          ctx.arc(s.x, s.y, 2.2, 0, Math.PI * 2);
+          ctx.fill();
+        }
+        ctx.globalAlpha = 1;
+        ctx.globalCompositeOperation = "source-over";
+
+        requestAnimationFrame(frame);
+      }
+      requestAnimationFrame(frame);
+    })();
+  </script>
+</body>
+</html>
