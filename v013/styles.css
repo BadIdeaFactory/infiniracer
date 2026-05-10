@@ -159,29 +159,13 @@ body::after {
 
 .overlay .ctrls {
   margin: 36px 0 18px;
+  line-height: 2.2;
   font-size: 13px;
   letter-spacing: 0.2em;
-}
-.overlay .ctrl-row {
-  display: grid;
-  grid-template-columns: 1fr 1fr;
-  align-items: center;
-  column-gap: 22px;
-  padding: 4px 0;
-}
-.overlay .ctrl-row .keys {
-  justify-self: end;
-  display: inline-flex;
-  gap: 6px;
-}
-.overlay .ctrl-row .action {
-  justify-self: start;
-  color: var(--cyan);
-  text-shadow: 0 0 6px rgba(92, 240, 255, 0.55);
-  opacity: 0.9;
+  opacity: 0.92;
 }
 .overlay .ctrls-or {
-  margin-top: 18px;
+  margin-top: 14px;
   font-size: 11px;
   letter-spacing: 0.32em;
   color: var(--amber);
@@ -189,15 +173,12 @@ body::after {
   text-shadow: 0 0 8px var(--amber);
 }
 .overlay kbd {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  min-width: 28px;
-  padding: 3px 8px;
+  display: inline-block;
+  padding: 2px 8px;
+  margin: 0 2px;
   border: 1px solid var(--cyan);
   border-radius: 2px;
   font-family: inherit;
-  font-size: 12px;
   color: var(--fg);
   box-shadow: 0 0 8px rgba(92, 240, 255, 0.5);
   background: rgba(92, 240, 255, 0.05);

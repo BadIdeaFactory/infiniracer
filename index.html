@@ -359,6 +359,49 @@
 
     <section class="versions">
 
+      <!-- v014 -->
+      <article class="ver acc-3">
+        <div class="ver-header">
+          <div>
+            <div class="ver-no">V014</div>
+            <div class="ver-tag">★ start screen tidy ★</div>
+          </div>
+          <a class="ver-play" href="v014/">▶ PLAY V014</a>
+        </div>
+        <div class="step">
+          <h3>PROMPT</h3>
+          <blockquote>the key info on the first screen is a little messy, tidy that up a bit</blockquote>
+          <h3>CHANGES</h3>
+          <ul>
+            <li>Controls list rebuilt as a 4-row grid: <strong>keys right-aligned</strong> | <strong>action left-aligned</strong>, with a fixed column gap. Each row covers one direction so the layout is symmetrical (LEFT and RIGHT are now their own rows instead of being lumped together as STEER)</li>
+            <li><code>kbd</code> elements get a fixed <code>min-width: 28px</code> + <code>display: inline-flex</code> so arrow-glyph and letter keys all render the same size — no more uneven gaps from glyphs of different widths</li>
+            <li>Arrow + letter alternates sit beside each other (no <code>/</code> separator); the grouping reads naturally without punctuation noise</li>
+            <li>Action labels coloured cyan with a soft glow so they pop next to the white keycaps; old reliance on <code>&amp;nbsp;</code> for spacing removed</li>
+            <li>"OR DRAG THE JOYSTICK" → "OR USE THE JOYSTICK" (covers both touch and mouse)</li>
+          </ul>
+        </div>
+      </article>
+
+      <!-- v013 -->
+      <article class="ver acc-1">
+        <div class="ver-header">
+          <div>
+            <div class="ver-no">V013</div>
+            <div class="ver-tag">★ joystick lifted off bottom edge ★</div>
+          </div>
+          <a class="ver-play" href="v013/">▶ PLAY V013</a>
+        </div>
+        <div class="step">
+          <h3>PROMPT</h3>
+          <blockquote>ok - small change move the joystick up a bit because on mobile it's too close to the edge of the screen causing unintentional gestures</blockquote>
+          <h3>CHANGES</h3>
+          <ul>
+            <li>Joystick centre raised: <code>cy = H - r - 80</code> (was <code>H - H · 0.10</code>) — keeps a consistent ~50 px clearance below the BRAKE / STEER labels and out of the iOS / Android swipe-up gesture zone, regardless of viewport height</li>
+            <li>Pointer hit-zone updated to follow the joystick (<code>py ≥ stick.cy - stick.r - 20</code>) so the top of the knob stays grabbable now that the stick sits higher</li>
+          </ul>
+        </div>
+      </article>
+
       <!-- v012 -->
       <article class="ver acc-4">
         <div class="ver-header">
