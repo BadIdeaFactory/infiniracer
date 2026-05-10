@@ -359,6 +359,47 @@
 
     <section class="versions">
 
+      <!-- v010 -->
+      <article class="ver acc-2">
+        <div class="ver-header">
+          <div>
+            <div class="ver-no">V010</div>
+            <div class="ver-tag">★ perf + leak fix ★</div>
+          </div>
+          <a class="ver-play" href="v010/">▶ PLAY V010</a>
+        </div>
+        <div class="step">
+          <h3>PROMPT</h3>
+          <blockquote>there seems to be a few performance issues, especially in Firefox, please look into improving performance, maybe we can use webgpu related stuff. also with firefox I left ot on overnight and it slowed to a crawl. memory leak?</blockquote>
+          <h3>CHANGES</h3>
+          <ul>
+            <li><strong>Memory leak fix:</strong> <code>trimWorld()</code> splices old <code>track[]</code> segments + deletes far-behind <code>sceneryChunks</code> entries every ~1s; <code>lastSegIdx</code> is adjusted so the window math stays valid</li>
+            <li>Intersection scan capped at 6000 pair checks per frame so heavy scenery can't make it dominate</li>
+            <li>Vignette gradient cached and rebuilt only on resize (was being recreated every frame)</li>
+            <li><code>visibilitychange</code> handler gates the entire frame body when the tab is hidden and resets <code>last</code> on return</li>
+            <li>FPS readout added to the HUD for quick A/B perception checks without DevTools</li>
+            <li>WebGPU not used — bottlenecks were JS-side state churn + unbounded arrays; canvas 2D handles this scene fine if we don't fight the rasterizer</li>
+            <li><em>Hotfix:</em> moved <code>_vignette</code> declaration to the top of the IIFE — initial <code>resize()</code> ran before <code>let _vignette</code>, throwing TDZ <code>ReferenceError</code> on load</li>
+            <li><em>Reverted:</em> the path-batched beam + dot renderers I shipped first turned out to be slower in both browsers (worse in Firefox). Building one big path with hundreds of arc/line subpaths and filling it under <code>"lighter"</code> hits the complex-path slow path; the state-change savings don't pay back. Back to per-element draws for now</li>
+            <li><strong>The actual win — Firefox profile pinpointed it:</strong> <code>drawScanlines</code> was eating <strong>67% of frame time</strong> (full-screen <code>fillRect</code> with <code>globalCompositeOperation = "overlay"</code>), and the per-frame radial-gradient vignette another 14%. <strong>81% of CPU</strong> on two effects that don't need to be in JS at all. Both moved to <code>body::before</code> / <code>body::after</code> CSS pseudo-elements layered over the canvas — the browser compositor handles them effectively for free. Visual result identical</li>
+            <li><strong>Follow-up profile (21× fewer total samples) revealed two smaller spikes</strong> — both addressed:
+              <ul>
+                <li>Joystick labels: re-issuing <code>ctx.font</code> + 3× <code>fillText</code> every frame triggered Style computation. Pre-baked to three offscreen canvases at <code>updateStickGeom</code>; render now does <code>drawImage</code></li>
+                <li><code>updateHUD</code>: was setting <code>textContent</code> on 4 spans + running <code>toLocaleString</code> + writing to <code>localStorage</code> every frame the score climbed. Now diffed against last-displayed values — DOM only updates on actual change. Best-score writes debounced via <code>setInterval(saveBestScore, 3000)</code> + <code>pagehide</code> save</li>
+                <li><code>carTrackInfo()</code> result cached per frame so <code>render()</code> and <code>updateHUD()</code> share one nearest-segment search</li>
+              </ul>
+            </li>
+            <li><strong>Follow-ups (third profile pass):</strong>
+              <ul>
+                <li><strong>Beam glow reduced to 2 passes.</strong> Dropped the wide × 5 / α 0.10 outer-glow pass — widest line caps to rasterize, contributed least to bloom. Mid pass slightly bumped (× 2.4 α 0.22 → × 2.6 α 0.26) so the visual stays close. Kept</li>
+                <li>Joystick labels bake made dpr-aware (was rendering at 1× and being upscaled on retina displays). Kept</li>
+                <li><em>Tried + reverted:</em> baked the joystick's static rings / ticks / glows into two offscreen canvases (one source-over, one composited "lighter") so each frame would be 2 <code>drawImage</code> calls. <strong>Profile showed it was slower</strong> in Firefox — drawJoystick went 5.2% → 8.4%, and <code>drawImage</code> appeared as a brand-new 7.9% entry. Likely cause: the bake bbox is mostly transparent space but Firefox's "lighter"-blend canvas-to-canvas <code>drawImage</code> still pays per-pixel work over the full ~350×350 region, while the original live draws only paid for actually-stroked pixels. Reverted to the previous live drawJoystick. Cardinal ticks now use a single 4-subpath stroked path (one <code>stroke</code> call instead of four) — small consolation</li>
+              </ul>
+            </li>
+          </ul>
+        </div>
+      </article>
+
       <!-- v009 -->
       <article class="ver acc-1">
         <div class="ver-header">
