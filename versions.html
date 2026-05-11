@@ -1,0 +1,428 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover" />
+  <title>INFINI RACER ✦ ALL VERSIONS</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Press+Start+2P&family=VT323&family=Major+Mono+Display&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="home.css" />
+</head>
+<body>
+  <canvas id="psych"></canvas>
+
+  <main>
+    <header class="hero">
+      <div class="glyphs">▲ ◆ ▼ ✦ ◇ ◆ ▼ ▲ ✦ ◆ ▼ ▲ ◆ ✦</div>
+      <h1 class="title" aria-label="Infini Racer">
+        <span class="word"><span style="--i:0">I</span><span style="--i:1">N</span><span style="--i:2">F</span><span style="--i:3">I</span><span style="--i:4">N</span><span style="--i:5">I</span></span>
+        <span class="word"><span style="--i:6">R</span><span style="--i:7">A</span><span style="--i:8">C</span><span style="--i:9">E</span><span style="--i:10">R</span></span>
+      </h1>
+      <p class="subtitle">⚡ ALL VERSIONS ⚡ A LIVING SCROLL OF EVERY ITERATION ⚡</p>
+    </header>
+
+    <a class="all-versions-link" href="index.html">◀ BACK TO HOME</a>
+
+    <section class="versions">
+
+      <!-- v015 -->
+      <article class="ver acc-5">
+        <div class="ver-header">
+          <div>
+            <div class="ver-no">V015</div>
+            <div class="ver-tag">★ ramps + airborne ★</div>
+          </div>
+          <a class="ver-play" href="v015/">▶ PLAY V015</a>
+        </div>
+        <div class="step">
+          <h3>PROMPT</h3>
+          <blockquote>ok let's try adding occasional ramps to the course, when you hit a ramp the vehicle leaves the ground and the road fades a bit and allows the vehicle to fly over any part of the course but must land on the track again or wipeout</blockquote>
+          <h3>CHANGES</h3>
+          <ul>
+            <li><strong>Ramps:</strong> sparse procedural launches placed every ~900–1700 units (deterministic from <code>worldSeed</code>). Each ramp is a wireframe wedge — a forward-pointing triangle with two perspective cross-bars narrowing toward the apex — drawn in amber so it pops against the cyan track edges. Width clamped to a fraction of the (variable) track half-width so it never blocks the track</li>
+            <li><strong>Airborne physics:</strong> hitting a ramp footprint (along-track <em>and</em> lateral) launches the car. <code>altVel</code> = <code>220 + (speed/MAX_SPEED) · 460</code>, gravity <code>720 u/s²</code>. While airborne: forward velocity preserved (no throttle/brake/coast), edge repulsion off, off-track crash check skipped. Steering still works at ~45% authority. On landing, if the vehicle lands inside the track edges → safe; if not → <code>triggerCrash()</code></li>
+            <li><strong>Visual fade:</strong> <code>worldAlpha = 1 − 0.6 · min(1, altitude/70)</code> applied to <em>only</em> the <code>G_TRACK</code> + <code>G_SCEN</code> beams and dots — track + scenery dim while the car + thrust + intersection sparkles stay full strength. Group tag now travels with each dot too</li>
+            <li><strong>Car scale-up:</strong> while airborne, render scale <code>= zoom · (1 + altitude · 0.0065)</code> — the vehicle grows toward the camera as it climbs, gives the lift cue without touching the camera transform</li>
+            <li><code>commitReset()</code> clears airborne state + ramps array; <code>trimWorld()</code> drops ramps far behind the player alongside scenery</li>
+            <li><strong>Tuning pass:</strong> jumps higher + longer airtime, ramps sparser, fade stronger:
+              <ul>
+                <li><code>GRAVITY</code> 720 → 600 / <code>LAUNCH_BASE</code> 220 → 360 / <code>LAUNCH_BONUS</code> 460 → 680 — full-speed jumps now ~3.5 s airtime peaking ~900 u (was ~1.9 s / ~320 u)</li>
+                <li><code>RAMP_GAP_MIN</code> 900 → 2000, <code>RAMP_GAP_RANGE</code> 800 → 1600 — ramps now every 2000–3600 units (≈ half as many)</li>
+                <li>World fade: <code>worldAlpha = 1 − 0.78 · altitudeFactor</code> (was 0.60), saturating at altitude 90 (was 70). Track + scenery drop to ~0.22 alpha at peak (was 0.40)</li>
+                <li>Car-scale formula clamped via <code>Math.min(2.4, 1 + altitude · 0.004)</code> so very high jumps don't make the car fill the screen</li>
+              </ul>
+            </li>
+          </ul>
+        </div>
+      </article>
+
+      <!-- v014 -->
+      <article class="ver acc-3">
+        <div class="ver-header">
+          <div>
+            <div class="ver-no">V014</div>
+            <div class="ver-tag">★ start screen tidy ★</div>
+          </div>
+          <a class="ver-play" href="v014/">▶ PLAY V014</a>
+        </div>
+        <div class="step">
+          <h3>PROMPT</h3>
+          <blockquote>the key info on the first screen is a little messy, tidy that up a bit</blockquote>
+          <h3>CHANGES</h3>
+          <ul>
+            <li>Controls list rebuilt as a 4-row grid: <strong>keys right-aligned</strong> | <strong>action left-aligned</strong>, with a fixed column gap. Each row covers one direction so the layout is symmetrical (LEFT and RIGHT are now their own rows instead of being lumped together as STEER)</li>
+            <li><code>kbd</code> elements get a fixed <code>min-width: 28px</code> + <code>display: inline-flex</code> so arrow-glyph and letter keys all render the same size — no more uneven gaps from glyphs of different widths</li>
+            <li>Arrow + letter alternates sit beside each other (no <code>/</code> separator); the grouping reads naturally without punctuation noise</li>
+            <li>Action labels coloured cyan with a soft glow so they pop next to the white keycaps; old reliance on <code>&amp;nbsp;</code> for spacing removed</li>
+            <li>"OR DRAG THE JOYSTICK" → "OR USE THE JOYSTICK" (covers both touch and mouse)</li>
+          </ul>
+        </div>
+      </article>
+
+      <!-- v013 -->
+      <article class="ver acc-1">
+        <div class="ver-header">
+          <div>
+            <div class="ver-no">V013</div>
+            <div class="ver-tag">★ joystick lifted off bottom edge ★</div>
+          </div>
+          <a class="ver-play" href="v013/">▶ PLAY V013</a>
+        </div>
+        <div class="step">
+          <h3>PROMPT</h3>
+          <blockquote>ok - small change move the joystick up a bit because on mobile it's too close to the edge of the screen causing unintentional gestures</blockquote>
+          <h3>CHANGES</h3>
+          <ul>
+            <li>Joystick centre raised: <code>cy = H - r - 80</code> (was <code>H - H · 0.10</code>) — keeps a consistent ~50 px clearance below the BRAKE / STEER labels and out of the iOS / Android swipe-up gesture zone, regardless of viewport height</li>
+            <li>Pointer hit-zone updated to follow the joystick (<code>py ≥ stick.cy - stick.r - 20</code>) so the top of the knob stays grabbable now that the stick sits higher</li>
+          </ul>
+        </div>
+      </article>
+
+      <!-- v012 -->
+      <article class="ver acc-4">
+        <div class="ver-header">
+          <div>
+            <div class="ver-no">V012</div>
+            <div class="ver-tag">★ rollback to canvas-2D ★</div>
+          </div>
+          <a class="ver-play" href="v012/">▶ PLAY V012</a>
+        </div>
+        <div class="step">
+          <h3>PROMPT</h3>
+          <blockquote>do 2  <em>(option 2 from the v011 follow-up: rollback)</em></blockquote>
+          <h3>CHANGES</h3>
+          <ul>
+            <li>WebGPU code path removed from <code>latest/</code> — back to single-canvas, canvas-2D-only rendering</li>
+            <li>Stripped: WGSL shaders, <code>initWebGPU</code>, two-canvas stack, <code>?renderer=webgpu</code> flag, render-loop branches, resize hooks for the GPU canvas</li>
+            <li>v011 stays frozen as the "we tried this" reference. The shader work + integration glue is preserved there if we want to revisit when scene density actually outgrows canvas-2D</li>
+            <li>Net code delta: <code>game.js</code> ~1500 lines → ~1200 lines; <code>styles.css</code> back to single canvas rule; <code>index.html</code> back to single canvas element</li>
+          </ul>
+          <h3>WHY</h3>
+          <ul>
+            <li>At v010 scene density on a fast Mac, both renderers easily hit the 60 fps cap, so the WebGPU win is invisible — it's <em>headroom</em> for content we don't have yet</li>
+            <li>The shader-rendered output looked slightly less crisp than the canvas-2D layered strokes. A second shader pass tightened it but at that point we're maintaining two render paths for parity, not headroom</li>
+            <li>Decision: pay the perf cost when there's content that needs it; until then, the simpler single-path canvas-2D code wins on maintainability</li>
+          </ul>
+        </div>
+      </article>
+
+      <!-- v011 -->
+      <article class="ver acc-3">
+        <div class="ver-header">
+          <div>
+            <div class="ver-no">V011</div>
+            <div class="ver-tag">★ webgpu opt-in ★</div>
+          </div>
+          <a class="ver-play" href="v011/?renderer=webgpu">▶ PLAY V011 (WebGPU)</a>
+        </div>
+        <div class="step">
+          <h3>PROMPT</h3>
+          <blockquote>I still feel like if we use webgpu we'd free ourselves up to worry less about performance, we can always rollback if it doesn't work</blockquote>
+          <h3>CHANGES</h3>
+          <ul>
+            <li><strong>Optional WebGPU renderer for beams + dots.</strong> Activated by <code>?renderer=webgpu</code> in the URL; falls back automatically to canvas 2D if <code>navigator.gpu</code> is missing or device init fails. Game logic, joystick, crash explosion, and HUD stay on the canvas-2D layer</li>
+            <li>Two-canvas stack: <code>&lt;canvas id="game-gpu"&gt;</code> at z-index 0 (WebGPU output, opaque, full screen) sits behind the existing <code>&lt;canvas id="game"&gt;</code> at z-index 1 (canvas-2D, cleared transparent when GPU is active so the layer below shows through)</li>
+            <li><strong>Line shader (WGSL):</strong> one instance per beam, vertex shader expands a quad along the line with rounded-cap glow padding, fragment shader computes capsule SDF and outputs <code>color × (crisp + exp-falloff glow)</code> with additive blend. Single draw call replaces the 2-pass canvas-2D stroke loop</li>
+            <li><strong>Dot shader (WGSL):</strong> billboarded quad per dot, fragment evaluates halo + mid + hot-core layers from one radial SDF in a single draw call. Replaces the 3-fill-per-dot canvas-2D loop</li>
+            <li>Hex-color → RGBA float cache so per-frame instance buffer marshalling is one Map lookup per beam/dot</li>
+            <li>Per-frame instance buffers grow on demand (start 256 lines / 512 dots, double when needed) and are reused across frames</li>
+            <li><code>device.lost</code> handler clears the <code>webgpu</code> reference so we automatically fall back to canvas 2D if the GPU disappears mid-session</li>
+            <li>Canvas-2D crisp beam pass deduplicated (an earlier edit had accidentally left a duplicate copy)</li>
+          </ul>
+          <h3>OPENING NOTES</h3>
+          <ul>
+            <li>To opt in: append <code>?renderer=webgpu</code> to the URL (the PLAY button on this card already does)</li>
+            <li>Without the flag, the game runs the same canvas-2D path as v010</li>
+            <li>If your browser doesn't support WebGPU (Firefox &lt; 141, Safari &lt; 26, Chromium without GPU), it logs a warning and silently falls back</li>
+          </ul>
+          <h3>SHADER CRISPNESS FIX</h3>
+          <ul>
+            <li>First pass used exponential glow falloff (<code>exp(-d * k)</code>) which bled softer than canvas-2D's hard-edged 2-pass stroke. Switched both shaders to <strong>smoothstep with hard edges</strong> matching the canvas-2D layers exactly: line crisp inner (α 1) + mid-glow ring (α 0.26) at width × 2.6; dot halo + mid + white core as three hard-edged disks. Smoothstep starts at the disk/line edge so the interior keeps full intensity (no AA softening of thin lines)</li>
+            <li><strong>Performance honesty note:</strong> at 60 fps cap on a fast Mac, both renderers easily hit vsync — the WebGPU win is <em>headroom</em>, only visible if scene density grows past what canvas-2D can sustain. If that headroom isn't currently valuable, this version can be ignored and v010 remains the active baseline</li>
+          </ul>
+        </div>
+      </article>
+
+      <!-- v010 -->
+      <article class="ver acc-2">
+        <div class="ver-header">
+          <div>
+            <div class="ver-no">V010</div>
+            <div class="ver-tag">★ perf + leak fix ★</div>
+          </div>
+          <a class="ver-play" href="v010/">▶ PLAY V010</a>
+        </div>
+        <div class="step">
+          <h3>PROMPT</h3>
+          <blockquote>there seems to be a few performance issues, especially in Firefox, please look into improving performance, maybe we can use webgpu related stuff. also with firefox I left ot on overnight and it slowed to a crawl. memory leak?</blockquote>
+          <h3>CHANGES</h3>
+          <ul>
+            <li><strong>Memory leak fix:</strong> <code>trimWorld()</code> splices old <code>track[]</code> segments + deletes far-behind <code>sceneryChunks</code> entries every ~1s; <code>lastSegIdx</code> is adjusted so the window math stays valid</li>
+            <li>Intersection scan capped at 6000 pair checks per frame so heavy scenery can't make it dominate</li>
+            <li>Vignette gradient cached and rebuilt only on resize (was being recreated every frame)</li>
+            <li><code>visibilitychange</code> handler gates the entire frame body when the tab is hidden and resets <code>last</code> on return</li>
+            <li>FPS readout added to the HUD for quick A/B perception checks without DevTools</li>
+            <li>WebGPU not used — bottlenecks were JS-side state churn + unbounded arrays; canvas 2D handles this scene fine if we don't fight the rasterizer</li>
+            <li><em>Hotfix:</em> moved <code>_vignette</code> declaration to the top of the IIFE — initial <code>resize()</code> ran before <code>let _vignette</code>, throwing TDZ <code>ReferenceError</code> on load</li>
+            <li><em>Reverted:</em> the path-batched beam + dot renderers I shipped first turned out to be slower in both browsers (worse in Firefox). Building one big path with hundreds of arc/line subpaths and filling it under <code>"lighter"</code> hits the complex-path slow path; the state-change savings don't pay back. Back to per-element draws for now</li>
+            <li><strong>The actual win — Firefox profile pinpointed it:</strong> <code>drawScanlines</code> was eating <strong>67% of frame time</strong> (full-screen <code>fillRect</code> with <code>globalCompositeOperation = "overlay"</code>), and the per-frame radial-gradient vignette another 14%. <strong>81% of CPU</strong> on two effects that don't need to be in JS at all. Both moved to <code>body::before</code> / <code>body::after</code> CSS pseudo-elements layered over the canvas — the browser compositor handles them effectively for free. Visual result identical</li>
+            <li><strong>Follow-up profile (21× fewer total samples) revealed two smaller spikes</strong> — both addressed:
+              <ul>
+                <li>Joystick labels: re-issuing <code>ctx.font</code> + 3× <code>fillText</code> every frame triggered Style computation. Pre-baked to three offscreen canvases at <code>updateStickGeom</code>; render now does <code>drawImage</code></li>
+                <li><code>updateHUD</code>: was setting <code>textContent</code> on 4 spans + running <code>toLocaleString</code> + writing to <code>localStorage</code> every frame the score climbed. Now diffed against last-displayed values — DOM only updates on actual change. Best-score writes debounced via <code>setInterval(saveBestScore, 3000)</code> + <code>pagehide</code> save</li>
+                <li><code>carTrackInfo()</code> result cached per frame so <code>render()</code> and <code>updateHUD()</code> share one nearest-segment search</li>
+              </ul>
+            </li>
+            <li><strong>Follow-ups (third profile pass):</strong>
+              <ul>
+                <li><strong>Beam glow reduced to 2 passes.</strong> Dropped the wide × 5 / α 0.10 outer-glow pass — widest line caps to rasterize, contributed least to bloom. Mid pass slightly bumped (× 2.4 α 0.22 → × 2.6 α 0.26) so the visual stays close. Kept</li>
+                <li>Joystick labels bake made dpr-aware (was rendering at 1× and being upscaled on retina displays). Kept</li>
+                <li><em>Tried + reverted:</em> baked the joystick's static rings / ticks / glows into two offscreen canvases (one source-over, one composited "lighter") so each frame would be 2 <code>drawImage</code> calls. <strong>Profile showed it was slower</strong> in Firefox — drawJoystick went 5.2% → 8.4%, and <code>drawImage</code> appeared as a brand-new 7.9% entry. Likely cause: the bake bbox is mostly transparent space but Firefox's "lighter"-blend canvas-to-canvas <code>drawImage</code> still pays per-pixel work over the full ~350×350 region, while the original live draws only paid for actually-stroked pixels. Reverted to the previous live drawJoystick. Cardinal ticks now use a single 4-subpath stroked path (one <code>stroke</code> call instead of four) — small consolation</li>
+              </ul>
+            </li>
+          </ul>
+        </div>
+      </article>
+
+      <!-- v009 -->
+      <article class="ver acc-1">
+        <div class="ver-header">
+          <div>
+            <div class="ver-no">V009</div>
+            <div class="ver-tag">★ different seed ★</div>
+          </div>
+          <a class="ver-play" href="v009/">▶ PLAY V009</a>
+        </div>
+        <div class="step">
+          <h3>PROMPT</h3>
+          <blockquote>I don't like this track. change the seed</blockquote>
+          <h3>CHANGES</h3>
+          <ul>
+            <li><code>worldSeed</code> 1 → 7341 in both the initial assignment and <code>commitReset()</code></li>
+          </ul>
+        </div>
+      </article>
+
+      <!-- v008 -->
+      <article class="ver acc-2">
+        <div class="ver-header">
+          <div>
+            <div class="ver-no">V008</div>
+            <div class="ver-tag">★ deterministic world ★</div>
+          </div>
+          <a class="ver-play" href="v008/">▶ PLAY V008</a>
+        </div>
+        <div class="step">
+          <h3>PROMPT</h3>
+          <blockquote>just do the first thing</blockquote>
+          <h3>CHANGES</h3>
+          <ul>
+            <li>World seed pinned to <code>1</code> instead of being randomized on load + on reset — same track every run</li>
+            <li>Same fixed seed used after a crash so the world is identical post-reset</li>
+          </ul>
+        </div>
+      </article>
+
+      <!-- v007 -->
+      <article class="ver acc-3">
+        <div class="ver-header">
+          <div>
+            <div class="ver-no">V007</div>
+            <div class="ver-tag">★ anti-magnetic edges ★</div>
+          </div>
+          <a class="ver-play" href="v007/">▶ PLAY V007</a>
+        </div>
+        <div class="step">
+          <h3>PROMPT</h3>
+          <blockquote>ok the edges of the track are slightly repellent, almost antimagnetic but if you go too fast this won't be enought to stop you going out, the closer to the edges the more you feel it though</blockquote>
+          <h3>CHANGES</h3>
+          <ul>
+            <li>Quadratic edge-repulsion velocity field — <code>proximity²·EDGE_REPEL_MAX</code> (620 u/s) added laterally toward the centerline</li>
+            <li>Repel zone <code>min(75, hw·0.6)</code> so narrow tracks shrink the field with them</li>
+            <li>Slow drift is corrected; fast perpendicular runs (lateral component up to 1600 u/s) punch through</li>
+            <li>Visualisation: nearest edge thickens with proximity + pulsing inward "field ticks" on every nearby segment</li>
+            <li><code>car.edgeProximity</code> + <code>car.edgeSide</code> exposed for the renderer</li>
+          </ul>
+        </div>
+      </article>
+
+      <!-- v006 -->
+      <article class="ver acc-4">
+        <div class="ver-header">
+          <div>
+            <div class="ver-no">V006</div>
+            <div class="ver-tag">★ slow-mo wipeout ★</div>
+          </div>
+          <a class="ver-play" href="v006/">▶ PLAY V006</a>
+        </div>
+        <div class="step">
+          <h3>PROMPT</h3>
+          <blockquote>ok when we crash we should see a spectacular explosion in slow motion</blockquote>
+          <h3>CHANGES</h3>
+          <ul>
+            <li>Crash sequence runs in slow-mo for 2.4 real seconds via a global <code>timeScale</code> (curve <code>0.10 + t^2.6 · 0.90</code>)</li>
+            <li>Car shatters into ~17 rotating line-shard debris pieces flying outward, each with phosphor-dot endpoints</li>
+            <li>90 radial sparks (red / yellow / orange / white) with halos + hot cores</li>
+            <li>5 staggered shockwave rings, each with halo + mid-glow + crisp ring passes</li>
+            <li>Initial radial bloom (white→amber→red), then darkening vignette while debris flies</li>
+            <li>WIPEOUT title + frozen final score in Press Start 2P, mid-screen</li>
+            <li>HUD score hidden during the crash so it doesn't fight the in-canvas readout</li>
+            <li><code>commitReset()</code> regenerates the world after the spectacle ends</li>
+          </ul>
+        </div>
+      </article>
+
+      <!-- v005 -->
+      <article class="ver acc-5">
+        <div class="ver-header">
+          <div>
+            <div class="ver-no">V005</div>
+            <div class="ver-tag">★ score + plateau widths ★</div>
+          </div>
+          <a class="ver-play" href="v005/">▶ PLAY V005</a>
+        </div>
+        <div class="step">
+          <h3>PROMPT</h3>
+          <blockquote>ok vary the size of the track more in dimension although we can have lon stretches the same size, include the score in a font reminiscent of asteroids, top centre larger than the distance font, the score should be speed multiplied by distance, use commas if the score gets large.</blockquote>
+          <h3>CHANGES</h3>
+          <ul>
+            <li>Width range expanded to 38–230; double-smoothstep on a slow noise (~5500u wavelength) gives long flat plateaus that snap between bands</li>
+            <li>Spawn area clamped to ≥55% of max width so you never start in a pinch</li>
+            <li>Press Start 2P (Google Fonts) loaded for the score readout</li>
+            <li>Score = <code>floor(car.speed × distance)</code>, formatted via <code>toLocaleString("en-US")</code> for commas</li>
+            <li>SCORE element top-center, <code>clamp(26px, 4.4vw, 56px)</code> with cyan triple-glow</li>
+            <li><code>BEST</code> now tracks max score (new <code>infiniracer.bestScore</code> localStorage key) and is also comma-formatted</li>
+          </ul>
+        </div>
+      </article>
+
+      <!-- v004 -->
+      <article class="ver acc-1">
+        <div class="ver-header">
+          <div>
+            <div class="ver-no">V004</div>
+            <div class="ver-tag">★ joystick + new keys ★</div>
+          </div>
+          <a class="ver-play" href="v004/">▶ PLAY V004</a>
+        </div>
+        <div class="step">
+          <h3>PROMPT</h3>
+          <blockquote>in the bottom fith of the screen show a joystick I can use to control the ship with the mouse, also change the lettered controls to q up a brake o left and p right</blockquote>
+          <h3>CHANGES</h3>
+          <ul>
+            <li>Vector-styled virtual joystick in the bottom fifth — drag with mouse or touch, knob springs back on release</li>
+            <li>Outer halo ring + cardinal phosphor ticks + amber stem + hot core knob; <code>THROTTLE / BRAKE / ◀ STEER ▶</code> labels</li>
+            <li>Keyboard remap: throttle <code>Q</code>/<code>↑</code>, brake <code>A</code>/<code>↓</code>, left <code>O</code>/<code>←</code>, right <code>P</code>/<code>→</code></li>
+            <li>Unified analog input pipeline (<code>readInput()</code>) — keyboard ORed with stick magnitude per axis</li>
+            <li>Thrust flame intensity now scales with analog throttle</li>
+            <li>Cursor changed back from <code>none</code> to <code>crosshair</code>; <code>touch-action: none</code> to stop mobile fighting the stick</li>
+            <li>Start overlay updated with the new controls + "OR DRAG THE JOYSTICK"</li>
+          </ul>
+        </div>
+      </article>
+
+      <!-- v003 -->
+      <article class="ver acc-2">
+        <div class="ver-header">
+          <div>
+            <div class="ver-no">V003</div>
+            <div class="ver-tag">★ much faster + variable width ★</div>
+          </div>
+          <a class="ver-play" href="v003/">▶ PLAY V003</a>
+        </div>
+        <div class="step">
+          <h3>PROMPT</h3>
+          <blockquote>ok allow the player to go much much faster and alter the width of the track randomly. when the player goes off the track reset the distance</blockquote>
+          <h3>CHANGES</h3>
+          <ul>
+            <li><code>MAX_SPEED</code> 620 → 1600, <code>ACCEL</code> 140 → 280, <code>BRAKE_DECEL</code> 320 → 520</li>
+            <li>Per-segment <code>hw</code> (50–160) driven by two slow noise octaves; spawn clamped wide</li>
+            <li>Off-track now triggers a full run reset — world seed re-randomized, track + scenery cleared, car teleported home</li>
+            <li>Brief red/white WIPEOUT flash with text on reset; best distance preserved</li>
+            <li>Distance markers + scenery offsets switched from the old constant to per-segment <code>seg.hw</code></li>
+          </ul>
+        </div>
+      </article>
+
+      <!-- v002 -->
+      <article class="ver acc-3">
+        <div class="ver-header">
+          <div>
+            <div class="ver-no">V002</div>
+            <div class="ver-tag">★ scaling car + faster ★</div>
+          </div>
+          <a class="ver-play" href="v002/">▶ PLAY V002</a>
+        </div>
+        <div class="step">
+          <h3>PROMPT</h3>
+          <blockquote>ok cool, the vehicle should also alter size when zooming out and make it possible to go faster</blockquote>
+          <h3>CHANGES</h3>
+          <ul>
+            <li>Car geometry scaled by world zoom in <code>p(x, y)</code> so the ship shrinks as the camera pulls back; line widths stay constant (vector-tube convention)</li>
+            <li><code>MAX_SPEED</code> 360 → 620, <code>ACCEL</code> 95 → 140, <code>BRAKE_DECEL</code> 220 → 320</li>
+            <li>Off-road drag rebalanced to <code>BRAKE_DECEL · 0.55</code> so it still bites at the new top speed</li>
+          </ul>
+        </div>
+      </article>
+
+      <!-- v001 -->
+      <article class="ver acc-4">
+        <div class="ver-header">
+          <div>
+            <div class="ver-no">V001</div>
+            <div class="ver-tag">★ genesis ★</div>
+          </div>
+          <a class="ver-play" href="v001/">▶ PLAY V001</a>
+        </div>
+        <div class="step">
+          <h3>PROMPT</h3>
+          <blockquote>ok in v001 dir create a game using only js html and css, the game is infini racer where you control a vehicle through a landscape that is purposefully minimal, in the vector style of the original asteroid game from the 70s/80s. where lines on landscape object or vehicle intersect there is a more brilliant point or dot. This is a top down racer where the vehicle appears static but the course moves and zooms out the faster you go. You can also look at other vector/retro games for inspiration.</blockquote>
+          <h3>CHANGES</h3>
+          <ul>
+            <li>Vector top-down racer: car drawn at screen-center pointing up; the world rotates + translates around it</li>
+            <li>Procedural infinite track from two octaves of smooth noise; deterministic chunked scenery (3–6-sided wireframes)</li>
+            <li>3-pass beam rendering — wide soft glow → medium glow → crisp line — for a phosphor-tube feel</li>
+            <li>Phosphor endpoint dots at every line endpoint plus extra-bright cross-group line-intersection dots</li>
+            <li>Camera zoom-out as <code>1.05 / (1 + speed_ratio · 1.35)</code></li>
+            <li>CRT scanline overlay + radial vignette</li>
+            <li>Off-road drag, distance + speed HUD, best distance in <code>localStorage</code></li>
+          </ul>
+        </div>
+      </article>
+
+    </section>
+
+    </section>
+
+    <footer>
+      <div>★ INFINI RACER ★ vector-tube racing in the spirit of 1979 ★</div>
+      <div>made with HTML &middot; CSS &middot; JS &middot; nothing else</div>
+      <div class="neon">▲ ◆ ▼ ✦ ◇ ◆ ▼ ▲ ✦ ◆ ▼ ▲</div>
+    </footer>
+  </main>
+
+  <script src="home.js" defer></script>
+</body>
+</html>
