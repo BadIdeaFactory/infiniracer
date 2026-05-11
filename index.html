@@ -32,28 +32,26 @@
 
     <section class="versions">
 
-      <!-- v016 (current) -->
-      <article class="ver acc-2">
+      <!-- v017 (current) -->
+      <article class="ver acc-3">
         <div class="ver-header">
           <div>
-            <div class="ver-no">V016</div>
-            <div class="ver-tag">★ shield power-ups (rolled back from ramps) ★</div>
+            <div class="ver-no">V017</div>
+            <div class="ver-tag">★ brake-to-drift around corners ★</div>
           </div>
-          <a class="ver-play" href="v016/">▶ PLAY V016</a>
+          <a class="ver-play" href="v017/">▶ PLAY V017</a>
         </div>
         <div class="step">
           <h3>PROMPT</h3>
-          <blockquote>ok I don't like the ramps, keep this version for reference but rollback and add power ups on the course that make the repellent effect of the side of the course stronger, during this period have the vehicle flash</blockquote>
+          <blockquote>ok lets try adding drift around corners when the brake is applied</blockquote>
           <h3>CHANGES</h3>
           <ul>
-            <li><strong>Rollback:</strong> ramps + airborne physics dropped from <code>latest/</code>; v015 stays in the snapshot folder as the "we tried ramps" reference. Codebase is back to the v014 baseline before layering the new feature</li>
-            <li><strong>Power-ups:</strong> sparse pickups every 1500–2600 units (deterministic from <code>worldSeed</code>). Visual: a magenta wireframe hexagon rotating slowly at <code>phase × 1.2</code>, with a pulsing white phosphor core dot — clearly distinct from track (cyan) and scenery (amber)</li>
-            <li>Pickup detection: when the car centre is within <code>POWERUP_RADIUS = 24</code> of an unpicked one (along-track + lateral together), the pickup is marked taken and <code>car.boostT = 5</code> seconds</li>
-            <li><strong>Boost effect:</strong> while <code>car.boostT &gt; 0</code>, edge repulsion is multiplied by <strong>3.0×</strong> (max push 620 → 1860 u/s) — well above <code>MAX_SPEED</code>, so the edge becomes a near-soft-wall you can't easily punch through. Returns to baseline when the timer expires</li>
-            <li><strong>Vehicle flash:</strong> while boost is active, body / cockpit / wheel colours switch to a magenta-tinted palette at ~6 Hz via <code>(Math.floor(phase × 12) &amp; 1)</code>. Square wave gives a sharp on/off blink that reads as "powered up" rather than a soft glow</li>
-            <li><code>commitReset()</code> clears the powerups array + boost timer; <code>trimWorld()</code> drops pickups (taken or not) once they're well behind</li>
-            <li><strong>Fix pass:</strong> the "power-ups disappear" bug — four call sites computed track indices as <code>Math.floor(s / SEG_LEN)</code>, but after <code>trimWorld()</code> splices old segments off the front, <code>track[0].s</code> is no longer 0 so that math points at the wrong row (or clamps to the last segment, making the hexagon snap to the end of the visible track). Added a <code>trackIndexAt(s)</code> helper that uses <code>track[0].s</code> as the base offset; rewired scenery placement, power-up gen, power-up render, and distance markers through it</li>
-            <li>Hexagon visual radius 14 → 21, pickup hit radius 18 → 24</li>
+            <li><strong>New <code>car.slipAngle</code></strong> field — radians offset between the car's heading and its actual motion direction. Translate now uses <code>motionDir = heading + slipAngle</code> instead of plain heading, so the world scrolls diagonally during a slide</li>
+            <li><strong>Drift trigger:</strong> brake held + steer commitment over <code>DRIFT_STEER_MIN = 0.18</code> + speed over <code>DRIFT_MIN_SPEED = 220</code>. Below the threshold the brake is just a brake (no slide)</li>
+            <li><strong>Yaw boost while drifting</strong> (<code>DRIFT_YAW_BOOST = 1.55</code>) — heading rotates faster than motion. Slip angle eases toward <code>±DRIFT_MAX_SLIP = 0.50 rad</code> (~29°) opposite the steer at <code>1/τ = 5.5</code>. When the trigger releases, slip decays back to zero at <code>1/τ = 6.5</code> — grip recovers</li>
+            <li><strong>Speed dynamics:</strong> brake during drift is softened (<code>DRIFT_BRAKE_MUL = 0.30</code>) so the slide actually continues, plus <code>DRIFT_DRAG = 90 u/s²</code> of bleed so it isn't free speed</li>
+            <li><strong>Visual cue:</strong> wheels brighten to hot orange (<code>#ff8d3a</code>) and thicken (1.4 → 1.8 px) while <code>|slipAngle| &gt; 0.06 rad</code>. The diagonal world-scroll already shows the slide; the brighter wheels just emphasise it</li>
+            <li><code>commitReset()</code> clears <code>slipAngle</code> alongside the rest of the car state</li>
           </ul>
         </div>
       </article>
