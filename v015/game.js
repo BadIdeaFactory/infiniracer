@@ -212,19 +212,6 @@
     }
   }
 
-  // Map an along-track distance `s` to its track[] index.
-  // After `trimWorld()` splices old segments off the front, `track[0].s`
-  // is no longer 0, so `Math.floor(s / SEG_LEN)` points at the wrong row
-  // (this was the "power-ups disappear" bug). Returns -1 if `s` falls
-  // outside the currently retained window.
-  function trackIndexAt(s) {
-    if (track.length === 0) return -1;
-    const baseS = track[0].s;
-    const i = Math.floor((s - baseS) / SEG_LEN);
-    if (i < 0 || i >= track.length) return -1;
-    return i;
-  }
-
   // ───────────────────────────────────────────────────────────── scenery
   // Wireframe shapes scattered alongside the track. Generated in chunks keyed
   // by along-track distance so the world is deterministic + cacheable.
@@ -251,8 +238,8 @@
       const r5 = hash01(seed + i * 97 + 4);
       const s = idx * CHUNK + r1 * CHUNK;
       ensureTrackTo(s + 200);
-      const segIdx = trackIndexAt(s);
-      const seg = segIdx >= 0 ? track[segIdx] : null;
+      const segIdx = Math.min(Math.floor(s / SEG_LEN), track.length - 1);
+      const seg = track[segIdx];
       if (!seg) continue;
       const side = r2 < 0.5 ? -1 : 1;
       const offset = seg.hw + 60 + r3 * 380;
@@ -277,29 +264,30 @@
     return list;
   }
 
-  // ───────────────────────────────────────────────────────────── power-ups
-  // Sparse pickups that, when grabbed, multiply the edge-repel field for a
-  // few seconds — track edges feel like a soft wall while it's active.
-  // Same chunked-along-the-track pattern as scenery, but generated linearly
-  // by an advancing cursor so spacing is easy to tune.
-  const powerups = [];          // sorted by .s ascending; mutated as picked up
-  let nextPowerupS = 1100;
-  const POWERUP_GAP_MIN   = 1500;
-  const POWERUP_GAP_RANGE = 1100;
-  const POWERUP_RADIUS    = 24;   // hit radius (track-local; visual r = 21)
+  // ───────────────────────────────────────────────────────────── ramps
+  // Sparse launch ramps along the track. Hitting one sends the car airborne
+  // until it lands; if it lands off the track, that's a wipeout.
+  const ramps = [];          // sorted by .s ascending
+  let nextRampS = 1500;      // first ramp at 1500 units to give the player a beat
+  const RAMP_GAP_MIN = 2000;
+  const RAMP_GAP_RANGE = 1600;
+  const RAMP_LENGTH = 95;
 
-  function ensurePowerupsTo(s) {
-    while (nextPowerupS < s + 700) {
-      ensureTrackTo(nextPowerupS + 200);
-      const idx = trackIndexAt(nextPowerupS);
-      const seg = idx >= 0 ? track[idx] : null;
-      if (!seg) { nextPowerupS += POWERUP_GAP_MIN; continue; }
-      const r1 = hash01(nextPowerupS * 0.019 + worldSeed * 5.7);
-      const lateralRange = Math.max(0, seg.hw - 24);
+  function ensureRampsTo(s) {
+    while (nextRampS < s + 600) {
+      ensureTrackTo(nextRampS + 200);
+      const idx = Math.min(Math.floor(nextRampS / SEG_LEN), track.length - 1);
+      const seg = track[idx];
+      if (!seg) { nextRampS += RAMP_GAP_MIN; continue; }
+      // Width of the ramp is always less than the track so there's room around it.
+      const width = Math.min(46, Math.max(28, seg.hw * 0.55));
+      // Lateral offset: keep some margin from the edge so a slight miss is possible.
+      const r1 = hash01(nextRampS * 0.017 + worldSeed * 7.3);
+      const lateralRange = Math.max(0, seg.hw - width * 0.5 - 18);
       const lateralOffset = (r1 - 0.5) * 2 * lateralRange;
-      powerups.push({ s: nextPowerupS, lateralOffset, taken: false });
-      const r2 = hash01(nextPowerupS * 0.031 + worldSeed * 13.3);
-      nextPowerupS += POWERUP_GAP_MIN + r2 * POWERUP_GAP_RANGE;
+      ramps.push({ s: nextRampS, length: RAMP_LENGTH, width, lateralOffset });
+      const r2 = hash01(nextRampS * 0.029 + worldSeed * 11.7);
+      nextRampS += RAMP_GAP_MIN + r2 * RAMP_GAP_RANGE;
     }
   }
 
@@ -323,10 +311,8 @@
       for (const k of sceneryChunks.keys()) {
         if (k < minChunk) sceneryChunks.delete(k);
       }
-      // Drop pickups (taken or not) once they're well behind us.
-      while (powerups.length && powerups[0].s < carS - TRIM_BEHIND_DST) {
-        powerups.shift();
-      }
+      // Drop ramps far behind too.
+      while (ramps.length && ramps[0].s < carS - TRIM_BEHIND_DST) ramps.shift();
     }
   }
 
@@ -339,7 +325,9 @@
     rumble: 0,        // visual jitter when off-track
     edgeProximity: 0, // 0 = safe, 1 = right at the edge
     edgeSide: 1,      // 1 = left edge active, -1 = right edge active
-    boostT: 0,        // seconds remaining on the edge-repel boost (0 = inactive)
+    airborne: false,  // off the ground after launching from a ramp
+    altitude: 0,      // height above track (world units)
+    altVel: 0,        // vertical velocity (world units / s)
   };
 
   const MAX_SPEED   = 1600;
@@ -352,10 +340,12 @@
   // < MAX_SPEED, so a fast perpendicular run can punch through.
   const EDGE_REPEL_MAX  = 620;
   const EDGE_REPEL_ZONE = 75;  // world units inward from the edge
-  // Power-up boost: while car.boostT > 0, multiply EDGE_REPEL_MAX so the
-  // edge field becomes a near-soft-wall (3.0 × 620 = 1860 > MAX_SPEED).
-  const BOOST_REPEL_MUL = 3.0;
-  const BOOST_DURATION  = 5.0; // seconds
+  // Ramp launch + airborne physics. Tuned for big arcs:
+  //   slow speed (~200 u/s)  → ~1.5s airtime, peak ~80 u
+  //   full speed (1600 u/s)  → ~3.5s airtime, peak ~900 u
+  const GRAVITY = 600;        // world units / s² downward (-z)
+  const LAUNCH_BASE = 360;    // vertical kick at zero speed
+  const LAUNCH_BONUS = 680;   // extra vertical kick at MAX_SPEED
 
   let bestScore = parseFloat(localStorage.getItem("infiniracer.bestScore") || "0") || 0;
   let bestScoreDirty = false;
@@ -395,10 +385,37 @@
   function updateCar(dt) {
     const { throttle, brake, left, right } = input;
 
-    // Smooth steering input. (target is analog [-1, 1].)
+    // Smooth steering input. (target is analog [-1, 1].) Shared by both
+    // ground and airborne paths.
     const target = right - left;
     car.steer += (target - car.steer) * Math.min(1, dt * STEER_RATE * 6);
 
+    // ─── AIRBORNE ─── ballistic; throttle/brake do nothing, edge repel and
+    // off-track crash check are skipped, steering still works (weaker).
+    if (car.airborne) {
+      const yaw = car.steer * TURN_RATE * 0.45;
+      car.heading += yaw * dt;
+      car.altVel  -= GRAVITY * dt;
+      car.altitude += car.altVel * dt;
+      car.x += Math.cos(car.heading) * car.speed * dt;
+      car.y += Math.sin(car.heading) * car.speed * dt;
+
+      if (car.altitude <= 0) {
+        car.altitude = 0;
+        car.altVel = 0;
+        car.airborne = false;
+        const land = carTrackInfo();
+        if (Math.abs(land.lateral) > land.seg.hw) {
+          triggerCrash();
+          return;
+        }
+      }
+      car.edgeProximity = 0;
+      car.rumble = 0;
+      return;
+    }
+
+    // ─── GROUND ───
     // Yaw: fades a bit at high speed so it feels heavier.
     const speedRatio = car.speed / MAX_SPEED;
     const yaw = car.steer * TURN_RATE * (0.55 + 0.6 * Math.min(1, speedRatio + 0.15));
@@ -413,11 +430,8 @@
     // Anti-magnetic edge field: a lateral push toward the centerline that
     // grows quadratically as you near the edge. Strong enough to catch slow
     // drift, but capped below MAX_SPEED so you can punch through if you
-    // commit hard / fast — UNLESS the boost power-up is active, in which
-    // case the cap is multiplied above MAX_SPEED and the edge becomes a
-    // soft wall.
+    // commit hard / fast.
     const info = carTrackInfo();
-    const boostMul = car.boostT > 0 ? BOOST_REPEL_MUL : 1;
     const eZone = Math.min(EDGE_REPEL_ZONE, info.seg.hw * 0.6);
     const edgeDist = info.seg.hw - Math.abs(info.lateral);
     let proximity = 0;
@@ -427,39 +441,35 @@
       const sign = info.lateral > 0 ? -1 : 1; // push back toward centerline
       const nx = -Math.sin(info.seg.dir);
       const ny =  Math.cos(info.seg.dir);
-      const mag = proximity * proximity * EDGE_REPEL_MAX * boostMul;
+      const mag = proximity * proximity * EDGE_REPEL_MAX;
       repelVx = sign * nx * mag;
       repelVy = sign * ny * mag;
     }
     car.edgeProximity = proximity;
     car.edgeSide = info.lateral > 0 ? 1 : -1;
 
-    // Tick the boost timer down each frame. Tick AFTER it influences this
-    // frame's repel so the very last frame of boost still helps.
-    if (car.boostT > 0) car.boostT = Math.max(0, car.boostT - dt);
-
     // Translate (forward velocity + repel velocity).
     car.x += (Math.cos(car.heading) * car.speed + repelVx) * dt;
     car.y += (Math.sin(car.heading) * car.speed + repelVy) * dt;
 
-    // Power-up pickup check. Generate ahead, scan a small window around
-    // current position, mark taken if the car's centre is within the
-    // pickup radius of any unpicked one.
-    ensurePowerupsTo(info.seg.s + 800);
+    // Ramp hit check — sample the new track position; if the car is over a
+    // ramp footprint, launch into the air. Ramps are sorted by .s so we can
+    // bail early once we pass the car position.
+    ensureRampsTo(info.seg.s + 600);
     const post = carTrackInfo();
-    for (const pu of powerups) {
-      if (pu.taken) continue;
-      if (pu.s > post.seg.s + 60) break;
-      if (pu.s < post.seg.s - 60) continue;
-      const dLong = post.seg.s - pu.s;
-      const dLat  = post.lateral - pu.lateralOffset;
-      if (dLong * dLong + dLat * dLat > POWERUP_RADIUS * POWERUP_RADIUS) continue;
-      pu.taken = true;
-      car.boostT = BOOST_DURATION;
-      break;
+    for (const ramp of ramps) {
+      if (ramp.s > post.seg.s) break;
+      if (ramp.s + ramp.length < post.seg.s) continue;
+      if (Math.abs(post.lateral - ramp.lateralOffset) > ramp.width * 0.5) continue;
+      // Launch.
+      car.airborne = true;
+      car.altitude = 0.01;
+      car.altVel = LAUNCH_BASE + (car.speed / MAX_SPEED) * LAUNCH_BONUS;
+      car.rumble = 0;
+      return;
     }
 
-    // After motion, did we still cross out? Then trigger the crash.
+    // Off-track? Trigger the crash.
     if (Math.abs(post.lateral) - post.seg.hw > 0) {
       triggerCrash();
       return;
@@ -579,14 +589,16 @@
     worldSeed = 7341;
     track.length = 0;
     sceneryChunks.clear();
-    powerups.length = 0;
-    nextPowerupS = 1100;
+    ramps.length = 0;
+    nextRampS = 1500;
     car.x = 0; car.y = 0;
     car.heading = -Math.PI / 2;
     car.speed = 0;
     car.steer = 0;
     car.rumble = 0;
-    car.boostT = 0;
+    car.airborne = false;
+    car.altitude = 0;
+    car.altVel = 0;
     lastSegIdx = 0;
     ensureTrackTo(2400);
     explosion.active = false;
@@ -660,8 +672,10 @@
 
   function beam(x1, y1, x2, y2, c, w, g) {
     beams.push({ x1, y1, x2, y2, c, w, g });
-    dots.push({ x: x1, y: y1, c, i: 0.55 });
-    dots.push({ x: x2, y: y2, c, i: 0.55 });
+    // Tag dots with the source group so the airborne world-fade can apply
+    // only to track/scenery dots and leave car/FX endpoint dots at full alpha.
+    dots.push({ x: x1, y: y1, c, i: 0.55, g });
+    dots.push({ x: x2, y: y2, c, i: 0.55, g });
   }
 
   function segIntersect(ax, ay, bx, by, cx, cy, dx, dy) {
@@ -695,7 +709,7 @@
         if (Math.max(a.y1, a.y2) < Math.min(b.y1, b.y2)) continue;
         if (Math.min(a.y1, a.y2) > Math.max(b.y1, b.y2)) continue;
         const p = segIntersect(a.x1, a.y1, a.x2, a.y2, b.x1, b.y1, b.x2, b.y2);
-        if (p) dots.push({ x: p.x, y: p.y, c: "#ffffff", i: 1.4 });
+        if (p) dots.push({ x: p.x, y: p.y, c: "#ffffff", i: 1.4, g: G_FX });
       }
     }
   }
@@ -708,6 +722,13 @@
     const cam = makeCam();
     const zoom = getZoom();
     const info = _frameTrackInfo || (_frameTrackInfo = carTrackInfo());
+
+    // Airborne visuals — world fades + car gets bigger as the car climbs.
+    // altitudeFactor saturates at ~90 units up so most of the flight sits at
+    // peak fade (worldAlpha ~0.22 — track + scenery dim to barely visible).
+    const altitudeFactor = car.airborne ? Math.min(1, car.altitude / 90) : 0;
+    const worldAlpha = 1 - altitudeFactor * 0.78;
+    const groupAlpha = (g) => (g === G_CAR || g === G_FX) ? 1 : worldAlpha;
 
     ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
     // Solid bg.
@@ -765,35 +786,42 @@
       }
     }
 
-    // ── Power-ups (rotating wireframe hexagons in magenta).
-    ensurePowerupsTo(carS + 1500);
-    const puRot = phase * 1.2; // shared rotation phase
-    for (const pu of powerups) {
-      if (pu.taken) continue;
-      if (pu.s + 80 < carS - 200) continue;
-      if (pu.s > carS + 1500) break;
-      const idx0 = trackIndexAt(pu.s);
-      const seg = idx0 >= 0 ? track[idx0] : null;
+    // ── Ramps (wireframe wedge with two perspective cross-bars).
+    ensureRampsTo(carS + 1500);
+    for (const ramp of ramps) {
+      if (ramp.s + ramp.length < carS - 200) continue;
+      if (ramp.s > carS + 1500) break;
+      const idx0 = Math.min(Math.floor(ramp.s / SEG_LEN), track.length - 1);
+      const seg = track[idx0];
       if (!seg) continue;
-      const nx = -Math.sin(seg.dir), ny = Math.cos(seg.dir);
-      const wx = seg.cx + nx * pu.lateralOffset;
-      const wy = seg.cy + ny * pu.lateralOffset;
-      const r = 21;
-      // Build hexagon vertices in world space, transform via cam.
-      const pts = [];
-      for (let k = 0; k < 6; k++) {
-        const a = puRot + k * (Math.PI / 3);
-        pts.push(cam(wx + Math.cos(a) * r, wy + Math.sin(a) * r));
+      const dirX = Math.cos(seg.dir), dirY = Math.sin(seg.dir);
+      const nx = -dirY, ny = dirX;
+      const baseCx = seg.cx + nx * ramp.lateralOffset;
+      const baseCy = seg.cy + ny * ramp.lateralOffset;
+      const apexX = baseCx + dirX * ramp.length;
+      const apexY = baseCy + dirY * ramp.length;
+      const halfW = ramp.width * 0.5;
+      const blX = baseCx - nx * halfW;
+      const blY = baseCy - ny * halfW;
+      const brX = baseCx + nx * halfW;
+      const brY = baseCy + ny * halfW;
+      const ap = cam(apexX, apexY);
+      const bl = cam(blX, blY);
+      const br = cam(brX, brY);
+      const c = "#ffb14b";
+      beam(bl.x, bl.y, ap.x, ap.y, c, 1.6, G_TRACK);
+      beam(br.x, br.y, ap.x, ap.y, c, 1.6, G_TRACK);
+      beam(bl.x, bl.y, br.x, br.y, c, 1.6, G_TRACK);
+      // Two perpendicular cross-bars narrowing toward the apex
+      // (perspective hint that this surface rises away from us).
+      for (const t of [0.34, 0.67]) {
+        const cx0 = baseCx + dirX * ramp.length * t;
+        const cy0 = baseCy + dirY * ramp.length * t;
+        const cw = halfW * (1 - t);
+        const cl = cam(cx0 - nx * cw, cy0 - ny * cw);
+        const cr = cam(cx0 + nx * cw, cy0 + ny * cw);
+        beam(cl.x, cl.y, cr.x, cr.y, c, 1.0, G_TRACK);
       }
-      const c = "#ff5cff";
-      for (let k = 0; k < 6; k++) {
-        const a = pts[k], b = pts[(k + 1) % 6];
-        beam(a.x, a.y, b.x, b.y, c, 1.4, G_FX);
-      }
-      // Bright pulsing core dot (uses the dot pipeline by tagging FX).
-      const corePulse = 0.6 + 0.4 * Math.sin(phase * 5 + pu.s * 0.01);
-      const cp = cam(wx, wy);
-      dots.push({ x: cp.x, y: cp.y, c: "#ffffff", i: 1.2 * corePulse, g: G_FX });
     }
 
     // ── Scenery.
@@ -818,8 +846,7 @@
       const startMark = Math.floor((carS - 200) / interval) * interval;
       for (let s = startMark; s < carS + 1500; s += interval) {
         if (s < 0) continue;
-        const idx = trackIndexAt(s);
-        if (idx < 0) continue;
+        const idx = Math.min(track.length - 1, Math.max(0, Math.floor(s / SEG_LEN)));
         const seg = track[idx];
         const nx = -Math.sin(seg.dir), ny = Math.cos(seg.dir);
         const len = seg.hw + 20;
@@ -831,26 +858,21 @@
 
     // ── Car (drawn directly in screen space, centered, slight steer-tilt).
     // Scales with the world zoom so the car shrinks as the camera pulls back.
+    // While airborne, multiply by (1 + altitude·0.0065) so it grows toward
+    // the camera as it climbs — gives the "leaving the ground" feel without
+    // touching the camera transform.
     // Skipped while a crash explosion is playing — the debris takes over.
     if (!explosion.active) {
       const cx0 = W / 2, cy0 = H / 2;
       const tilt = car.steer * 0.16;
-      const carScale = zoom;
+      // Capped so very high jumps don't make the car fill the whole screen.
+      const carScale = zoom * (car.airborne ? Math.min(2.4, 1 + car.altitude * 0.004) : 1);
       const rj = car.rumble ? (Math.random() - 0.5) * car.rumble * 3 * carScale : 0;
       const p = (x, y) => {
         const sx = x * carScale, sy = y * carScale;
         const cs = Math.cos(tilt), sn = Math.sin(tilt);
         return { x: cx0 + (sx * cs - sy * sn) + rj, y: cy0 + (sx * sn + sy * cs) };
       };
-
-      // While the boost is active, swap the car's palette to a magenta-
-      // tinted one at ~6 Hz. Square wave (Math.floor) gives a sharp blink
-      // rather than a gradient — reads as "powered up".
-      const boosting = car.boostT > 0;
-      const flashOn  = boosting && (Math.floor(phase * 12) & 1) === 1;
-      const bodyCol = flashOn ? "#ff5cff" : "#e8fffb";
-      const cockCol = flashOn ? "#ffd6ff" : "#5cf0ff";
-      const wheelCol = flashOn ? "#ff5cff" : "#ffb14b";
 
       // Body outline.
       const body = [
@@ -859,14 +881,14 @@
       ].map(([x, y]) => p(x, y));
       for (let i = 0; i < body.length; i++) {
         const a = body[i], b = body[(i + 1) % body.length];
-        beam(a.x, a.y, b.x, b.y, bodyCol, 1.7, G_CAR);
+        beam(a.x, a.y, b.x, b.y, "#e8fffb", 1.7, G_CAR);
       }
 
       // Cockpit diamond.
       const cock = [[0, -2], [4, 4], [0, 10], [-4, 4]].map(([x, y]) => p(x, y));
       for (let i = 0; i < cock.length; i++) {
         const a = cock[i], b = cock[(i + 1) % cock.length];
-        beam(a.x, a.y, b.x, b.y, cockCol, 1.2, G_CAR);
+        beam(a.x, a.y, b.x, b.y, "#5cf0ff", 1.2, G_CAR);
       }
 
       // Wheels.
@@ -877,7 +899,7 @@
         [ 10,   8,  10, 15],
       ].forEach(([x1, y1, x2, y2]) => {
         const a = p(x1, y1), b = p(x2, y2);
-        beam(a.x, a.y, b.x, b.y, wheelCol, 1.4, G_CAR);
+        beam(a.x, a.y, b.x, b.y, "#ffb14b", 1.4, G_CAR);
       });
 
       // Thrust flicker — scales with analog throttle.
@@ -901,49 +923,53 @@
     findIntersections();
 
     // ─── Draw beams ──────────────────────────────────────────────
-    // Two passes — mid glow (lighter) + crisp lines (source-over).
+    // Two passes — mid glow (lighter) + crisp lines (source-over). When
+    // airborne, world groups (TRACK, SCEN) get scaled by worldAlpha while
+    // the car + FX groups stay full strength.
     ctx.lineCap = "round";
     ctx.lineJoin = "round";
 
     ctx.globalCompositeOperation = "lighter";
-    ctx.globalAlpha = 0.26;
     for (let i = 0; i < beams.length; i++) {
       const b = beams[i];
       ctx.strokeStyle = b.c;
       ctx.lineWidth   = b.w * 2.6;
+      ctx.globalAlpha = 0.26 * groupAlpha(b.g);
+      ctx.beginPath();
+      ctx.moveTo(b.x1, b.y1);
+      ctx.lineTo(b.x2, b.y2);
+      ctx.stroke();
+    }
+    ctx.globalCompositeOperation = "source-over";
+    for (let i = 0; i < beams.length; i++) {
+      const b = beams[i];
+      ctx.strokeStyle = b.c;
+      ctx.lineWidth   = b.w;
+      ctx.globalAlpha = groupAlpha(b.g);
       ctx.beginPath();
       ctx.moveTo(b.x1, b.y1);
       ctx.lineTo(b.x2, b.y2);
       ctx.stroke();
     }
     ctx.globalAlpha = 1;
-    ctx.globalCompositeOperation = "source-over";
-    for (let i = 0; i < beams.length; i++) {
-      const b = beams[i];
-      ctx.strokeStyle = b.c;
-      ctx.lineWidth   = b.w;
-      ctx.beginPath();
-      ctx.moveTo(b.x1, b.y1);
-      ctx.lineTo(b.x2, b.y2);
-      ctx.stroke();
-    }
 
     // ─── Phosphor dots ──────────────────────────────────────────
     ctx.globalCompositeOperation = "lighter";
     for (let k = 0; k < dots.length; k++) {
       const d = dots[k];
       const i = d.i;
+      const ga = groupAlpha(d.g);
       ctx.fillStyle = d.c;
-      ctx.globalAlpha = 0.10 * i;
+      ctx.globalAlpha = 0.10 * i * ga;
       ctx.beginPath();
       ctx.arc(d.x, d.y, 5 + i * 3, 0, Math.PI * 2);
       ctx.fill();
-      ctx.globalAlpha = 0.40 * i;
+      ctx.globalAlpha = 0.40 * i * ga;
       ctx.beginPath();
       ctx.arc(d.x, d.y, 2 + i * 1.2, 0, Math.PI * 2);
       ctx.fill();
       ctx.fillStyle = "#ffffff";
-      ctx.globalAlpha = Math.min(1, i);
+      ctx.globalAlpha = Math.min(1, i) * ga;
       ctx.beginPath();
       ctx.arc(d.x, d.y, 0.9 + i * 0.6, 0, Math.PI * 2);
       ctx.fill();

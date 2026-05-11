@@ -1,0 +1,42 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover" />
+  <title>INFINI RACER</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Press+Start+2P&family=VT323&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="styles.css" />
+</head>
+<body>
+  <canvas id="game"></canvas>
+
+  <div id="score" aria-hidden="true">0</div>
+
+  <div id="hud" aria-hidden="true">
+    <div class="row"><span class="lbl">SPD</span><span id="spd">000</span></div>
+    <div class="row"><span class="lbl">DST</span><span id="dst">000000</span></div>
+    <div class="row"><span class="lbl">BST</span><span id="bst">0</span></div>
+    <div class="row"><span class="lbl">FPS</span><span id="fps">--</span></div>
+    <div class="bar"><div id="speedbar"></div></div>
+  </div>
+
+  <div id="overlay" class="overlay">
+    <div class="title">
+      <span class="g1">INFINI</span><span class="g2">RACER</span>
+    </div>
+    <div class="sub">[ vector / 1979 ]</div>
+    <div class="ctrls">
+      <div class="ctrl-row"><span class="keys"><kbd>↑</kbd><kbd>Q</kbd></span><span class="action">THROTTLE</span></div>
+      <div class="ctrl-row"><span class="keys"><kbd>↓</kbd><kbd>A</kbd></span><span class="action">BRAKE</span></div>
+      <div class="ctrl-row"><span class="keys"><kbd>←</kbd><kbd>O</kbd></span><span class="action">LEFT</span></div>
+      <div class="ctrl-row"><span class="keys"><kbd>→</kbd><kbd>P</kbd></span><span class="action">RIGHT</span></div>
+      <p class="ctrls-or">— OR USE THE JOYSTICK —</p>
+    </div>
+    <p class="hint">PRESS ANY KEY TO BEGIN</p>
+  </div>
+
+  <script src="game.js"></script>
+</body>
+</html>

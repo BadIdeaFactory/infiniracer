@@ -359,6 +359,63 @@
 
     <section class="versions">
 
+      <!-- v016 -->
+      <article class="ver acc-2">
+        <div class="ver-header">
+          <div>
+            <div class="ver-no">V016</div>
+            <div class="ver-tag">★ shield power-ups (rolled back from ramps) ★</div>
+          </div>
+          <a class="ver-play" href="v016/">▶ PLAY V016</a>
+        </div>
+        <div class="step">
+          <h3>PROMPT</h3>
+          <blockquote>ok I don't like the ramps, keep this version for reference but rollback and add power ups on the course that make the repellent effect of the side of the course stronger, during this period have the vehicle flash</blockquote>
+          <h3>CHANGES</h3>
+          <ul>
+            <li><strong>Rollback:</strong> ramps + airborne physics dropped from <code>latest/</code>; v015 stays in the snapshot folder as the "we tried ramps" reference. Codebase is back to the v014 baseline before layering the new feature</li>
+            <li><strong>Power-ups:</strong> sparse pickups every 1500–2600 units (deterministic from <code>worldSeed</code>). Visual: a magenta wireframe hexagon rotating slowly at <code>phase × 1.2</code>, with a pulsing white phosphor core dot — clearly distinct from track (cyan) and scenery (amber)</li>
+            <li>Pickup detection: when the car centre is within <code>POWERUP_RADIUS = 18</code> of an unpicked one (along-track + lateral together), the pickup is marked taken and <code>car.boostT = 5</code> seconds</li>
+            <li><strong>Boost effect:</strong> while <code>car.boostT &gt; 0</code>, edge repulsion is multiplied by <strong>3.0×</strong> (max push 620 → 1860 u/s) — well above <code>MAX_SPEED</code>, so the edge becomes a near-soft-wall you can't easily punch through. Returns to baseline when the timer expires</li>
+            <li><strong>Vehicle flash:</strong> while boost is active, body / cockpit / wheel colours switch to a magenta-tinted palette at ~6 Hz via <code>(Math.floor(phase × 12) &amp; 1)</code>. Square wave gives a sharp on/off blink that reads as "powered up" rather than a soft glow</li>
+            <li><code>commitReset()</code> clears the powerups array + boost timer; <code>trimWorld()</code> drops pickups (taken or not) once they're well behind</li>
+            <li><strong>Fix pass:</strong> the "power-ups disappear" bug — four call sites computed track indices as <code>Math.floor(s / SEG_LEN)</code>, but after <code>trimWorld()</code> splices old segments off the front, <code>track[0].s</code> is no longer 0 so that math points at the wrong row (or clamps to the last segment, making the hexagon snap to the end of the visible track). Added a <code>trackIndexAt(s)</code> helper that uses <code>track[0].s</code> as the base offset; rewired scenery placement, power-up gen, power-up render, and distance markers through it</li>
+            <li>Hexagon visual radius 14 → 21, pickup hit radius 18 → 24</li>
+          </ul>
+        </div>
+      </article>
+
+      <!-- v015 -->
+      <article class="ver acc-5">
+        <div class="ver-header">
+          <div>
+            <div class="ver-no">V015</div>
+            <div class="ver-tag">★ ramps + airborne ★</div>
+          </div>
+          <a class="ver-play" href="v015/">▶ PLAY V015</a>
+        </div>
+        <div class="step">
+          <h3>PROMPT</h3>
+          <blockquote>ok let's try adding occasional ramps to the course, when you hit a ramp the vehicle leaves the ground and the road fades a bit and allows the vehicle to fly over any part of the course but must land on the track again or wipeout</blockquote>
+          <h3>CHANGES</h3>
+          <ul>
+            <li><strong>Ramps:</strong> sparse procedural launches placed every ~900–1700 units (deterministic from <code>worldSeed</code>). Each ramp is a wireframe wedge — a forward-pointing triangle with two perspective cross-bars narrowing toward the apex — drawn in amber so it pops against the cyan track edges. Width clamped to a fraction of the (variable) track half-width so it never blocks the track</li>
+            <li><strong>Airborne physics:</strong> hitting a ramp footprint (along-track <em>and</em> lateral) launches the car. <code>altVel</code> = <code>220 + (speed/MAX_SPEED) · 460</code>, gravity <code>720 u/s²</code>. While airborne: forward velocity preserved (no throttle/brake/coast), edge repulsion off, off-track crash check skipped. Steering still works at ~45% authority. On landing, if the vehicle lands inside the track edges → safe; if not → <code>triggerCrash()</code></li>
+            <li><strong>Visual fade:</strong> <code>worldAlpha = 1 − 0.6 · min(1, altitude/70)</code> applied to <em>only</em> the <code>G_TRACK</code> + <code>G_SCEN</code> beams and dots — track + scenery dim while the car + thrust + intersection sparkles stay full strength. Group tag now travels with each dot too</li>
+            <li><strong>Car scale-up:</strong> while airborne, render scale <code>= zoom · (1 + altitude · 0.0065)</code> — the vehicle grows toward the camera as it climbs, gives the lift cue without touching the camera transform</li>
+            <li><code>commitReset()</code> clears airborne state + ramps array; <code>trimWorld()</code> drops ramps far behind the player alongside scenery</li>
+            <li><strong>Tuning pass:</strong> jumps higher + longer airtime, ramps sparser, fade stronger:
+              <ul>
+                <li><code>GRAVITY</code> 720 → 600 / <code>LAUNCH_BASE</code> 220 → 360 / <code>LAUNCH_BONUS</code> 460 → 680 — full-speed jumps now ~3.5 s airtime peaking ~900 u (was ~1.9 s / ~320 u)</li>
+                <li><code>RAMP_GAP_MIN</code> 900 → 2000, <code>RAMP_GAP_RANGE</code> 800 → 1600 — ramps now every 2000–3600 units (≈ half as many)</li>
+                <li>World fade: <code>worldAlpha = 1 − 0.78 · altitudeFactor</code> (was 0.60), saturating at altitude 90 (was 70). Track + scenery drop to ~0.22 alpha at peak (was 0.40)</li>
+                <li>Car-scale formula clamped via <code>Math.min(2.4, 1 + altitude · 0.004)</code> so very high jumps don't make the car fill the screen</li>
+              </ul>
+            </li>
+          </ul>
+        </div>
+      </article>
+
       <!-- v014 -->
       <article class="ver acc-3">
         <div class="ver-header">
