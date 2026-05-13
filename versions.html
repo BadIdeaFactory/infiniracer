@@ -26,6 +26,30 @@
 
     <section class="versions">
 
+      <!-- v017 -->
+      <article class="ver acc-3">
+        <div class="ver-header">
+          <div>
+            <div class="ver-no">V017</div>
+            <div class="ver-tag">★ brake-to-drift around corners ★</div>
+          </div>
+          <a class="ver-play" href="v017/">▶ PLAY V017</a>
+        </div>
+        <div class="step">
+          <h3>PROMPT</h3>
+          <blockquote>ok lets try adding drift around corners when the brake is applied</blockquote>
+          <h3>CHANGES</h3>
+          <ul>
+            <li><strong>New <code>car.slipAngle</code></strong> field — radians offset between the car's heading and its actual motion direction. Translate now uses <code>motionDir = heading + slipAngle</code> instead of plain heading, so the world scrolls diagonally during a slide</li>
+            <li><strong>Drift trigger:</strong> brake held + steer commitment over <code>DRIFT_STEER_MIN = 0.18</code> + speed over <code>DRIFT_MIN_SPEED = 220</code>. Below the threshold the brake is just a brake (no slide)</li>
+            <li><strong>Yaw boost while drifting</strong> (<code>DRIFT_YAW_BOOST = 1.55</code>) — heading rotates faster than motion. Slip angle eases toward <code>±DRIFT_MAX_SLIP = 0.50 rad</code> (~29°) opposite the steer at <code>1/τ = 5.5</code>. When the trigger releases, slip decays back to zero at <code>1/τ = 6.5</code> — grip recovers</li>
+            <li><strong>Speed dynamics:</strong> brake during drift is softened (<code>DRIFT_BRAKE_MUL = 0.30</code>) so the slide actually continues, plus <code>DRIFT_DRAG = 90 u/s²</code> of bleed so it isn't free speed</li>
+            <li><strong>Visual cue:</strong> wheels brighten to hot orange (<code>#ff8d3a</code>) and thicken (1.4 → 1.8 px) while <code>|slipAngle| &gt; 0.06 rad</code>. The diagonal world-scroll already shows the slide; the brighter wheels just emphasise it</li>
+            <li><code>commitReset()</code> clears <code>slipAngle</code> alongside the rest of the car state</li>
+          </ul>
+        </div>
+      </article>
+
       <!-- v016 -->
       <article class="ver acc-2">
         <div class="ver-header">

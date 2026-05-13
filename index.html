@@ -32,26 +32,25 @@
 
     <section class="versions">
 
-      <!-- v017 (current) -->
-      <article class="ver acc-3">
+      <!-- v018 (current) -->
+      <article class="ver acc-1">
         <div class="ver-header">
           <div>
-            <div class="ver-no">V017</div>
-            <div class="ver-tag">★ brake-to-drift around corners ★</div>
+            <div class="ver-no">V018</div>
+            <div class="ver-tag">★ start-screen pickup tutorial ★</div>
           </div>
-          <a class="ver-play" href="v017/">▶ PLAY V017</a>
+          <a class="ver-play" href="v018/">▶ PLAY V018</a>
         </div>
         <div class="step">
           <h3>PROMPT</h3>
-          <blockquote>ok lets try adding drift around corners when the brake is applied</blockquote>
+          <blockquote>explain what the hexagon pick ups do at the start, maybe show an example of the spinning hexagon pickup</blockquote>
           <h3>CHANGES</h3>
           <ul>
-            <li><strong>New <code>car.slipAngle</code></strong> field — radians offset between the car's heading and its actual motion direction. Translate now uses <code>motionDir = heading + slipAngle</code> instead of plain heading, so the world scrolls diagonally during a slide</li>
-            <li><strong>Drift trigger:</strong> brake held + steer commitment over <code>DRIFT_STEER_MIN = 0.18</code> + speed over <code>DRIFT_MIN_SPEED = 220</code>. Below the threshold the brake is just a brake (no slide)</li>
-            <li><strong>Yaw boost while drifting</strong> (<code>DRIFT_YAW_BOOST = 1.55</code>) — heading rotates faster than motion. Slip angle eases toward <code>±DRIFT_MAX_SLIP = 0.50 rad</code> (~29°) opposite the steer at <code>1/τ = 5.5</code>. When the trigger releases, slip decays back to zero at <code>1/τ = 6.5</code> — grip recovers</li>
-            <li><strong>Speed dynamics:</strong> brake during drift is softened (<code>DRIFT_BRAKE_MUL = 0.30</code>) so the slide actually continues, plus <code>DRIFT_DRAG = 90 u/s²</code> of bleed so it isn't free speed</li>
-            <li><strong>Visual cue:</strong> wheels brighten to hot orange (<code>#ff8d3a</code>) and thicken (1.4 → 1.8 px) while <code>|slipAngle| &gt; 0.06 rad</code>. The diagonal world-scroll already shows the slide; the brighter wheels just emphasise it</li>
-            <li><code>commitReset()</code> clears <code>slipAngle</code> alongside the rest of the car state</li>
+            <li>New <strong>SHIELD PICKUP</strong> tutorial card in the start overlay — a live SVG hexagon that spins (<code>5s linear infinite</code>) with a pulsing white core (<code>0.9s ease-in-out</code>), matching the in-game magenta colour + glow</li>
+            <li>One-line explanation next to the demo: <em>"grab one to charge the side rails for 5 seconds — the track edges push you back harder, so you can lean into corners"</em></li>
+            <li>Styled to match the overlay aesthetic: dashed magenta border, low-opacity magenta tint, Press Start 2P label + VT323 description</li>
+            <li>SVG uses <code>drop-shadow</code> filters for the phosphor glow so the demo reads at the same vector-tube intensity as the in-game pickup</li>
+            <li><strong>Fix pass</strong> after first cut: the hex was orbiting (translating in a wide circle) rather than spinning in place. Cause: <code>transform-origin: center</code> on an inner <code>&lt;g&gt;</code> resolves to the SVG viewport's top-left in some browsers because <code>transform-box</code> defaults are inconsistent. Moved the spin to the outer <code>&lt;svg&gt;</code> element (a DOM element where <code>transform-origin: center</code> is well-behaved), kept the core's pulse on the inner circle with <code>transform-box: fill-box</code> so its scale stays pinned to its own centre. Added 6 white vertex phosphor dots that ride along with the rotation — matches the in-game render where each <code>beam()</code> call auto-emits dots at both endpoints</li>
           </ul>
         </div>
       </article>
