@@ -32,26 +32,23 @@
 
     <section class="versions">
 
-      <!-- v020 (current) -->
-      <article class="ver acc-2">
+      <!-- v021 (current) -->
+      <article class="ver acc-4">
         <div class="ver-header">
           <div>
-            <div class="ver-no">V020</div>
-            <div class="ver-tag">★ longer stages + carry-over + CHECKPOINT! ★</div>
+            <div class="ver-no">V021</div>
+            <div class="ver-tag">★ tighter clock + longer race ★</div>
           </div>
-          <a class="ver-play" href="v020/">▶ PLAY V020</a>
+          <a class="ver-play" href="v021/">▶ PLAY V021</a>
         </div>
         <div class="step">
           <h3>PROMPT</h3>
-          <blockquote>ok a few things, make the stages further apart say 10 times further apart, add any remaining time at checkpoint to the new countdown. give the player 90 seconds per stage and when you pass a checkpoint the word checkpoint! should be displayed in a cool way and then disappear.</blockquote>
+          <blockquote>ok tweak it so it's only 60 seconds per stage, and make them slightly further apart</blockquote>
           <h3>CHANGES</h3>
           <ul>
-            <li><strong>Stages 10× further apart.</strong> Distances 6000 / 14000 / 24000 → <strong>60 000 / 140 000 / 240 000</strong>. Stage gaps are now 60k / 80k / 100k instead of 6k / 8k / 10k</li>
-            <li><strong>90 seconds per stage</strong> across the board (was 22 / 22 / 25). With <code>MAX_SPEED = 1600</code>, the first stage alone takes ~37 s at full throttle — comfortable, but slow driving will burn the clock</li>
-            <li><strong>Time carries over at checkpoints.</strong> When you cross a checkpoint, the leftover seconds on the current clock are <em>added</em> to the next stage's 90 s. So fast driving compounds — finishing stage 1 with 50 s left gives you 140 s for stage 2. Rewards committing early</li>
-            <li><strong>CHECKPOINT! banner</strong> renders centre-screen on every intermediate cross. Snap-zoom from 1.4× scale to 1.0× while fading in (0.15 s), holds at full size for ~0.9 s, then fades out over 0.45 s. Two-pass text — a wide amber drop-shadow halo behind, a slightly smaller white-on-amber core in front for a vector-tube hot edge. Disappears entirely before the next stage gets going</li>
-            <li><code>CP_FLASH_DURATION = 1.5 s</code> total. <code>race.cpFlashT</code> already existed as a placeholder — now wired to <code>drawCheckpointFlash()</code></li>
-            <li>Final checkpoint (the chequered flag) does <em>not</em> show CHECKPOINT! — the finish overlay takes over instead</li>
+            <li><strong>60 seconds per stage</strong> (was 90 s). Across all 3 stages the base budget is now 180 s total</li>
+            <li><strong>Slightly further apart:</strong> distances 60 / 140 / 240 k → <strong>65 / 150 / 255 k</strong>. Gaps are 65 k / 85 k / 105 k (was 60 / 80 / 100)</li>
+            <li>Net feel: meaningfully tighter. Time-out is back in play even with carry-over — back-of-the-envelope says you need to sustain about 1500 u/s (~94 % of MAX_SPEED) to finish on the wire. Slacking in early stages eats into the carry-over and burns you on stage 3</li>
           </ul>
         </div>
       </article>
