@@ -32,23 +32,29 @@
 
     <section class="versions">
 
-      <!-- v021 (current) -->
-      <article class="ver acc-4">
+      <!-- v023 (current) -->
+      <article class="ver acc-3">
         <div class="ver-header">
           <div>
-            <div class="ver-no">V021</div>
-            <div class="ver-tag">★ tighter clock + longer race ★</div>
+            <div class="ver-no">V023</div>
+            <div class="ver-tag">★ track-intro: pop + fade-out-while-growing ★</div>
           </div>
-          <a class="ver-play" href="v021/">▶ PLAY V021</a>
+          <a class="ver-play" href="v023/">▶ PLAY V023</a>
         </div>
         <div class="step">
           <h3>PROMPT</h3>
-          <blockquote>ok tweak it so it's only 60 seconds per stage, and make them slightly further apart</blockquote>
+          <blockquote>actually it's fine, but show the track name more prominently at the start of the race then move into into position at the top in a cool way
+
+(follow-up) always show the track name at the top and fade it out instead of moving it to the top. it should fade out while increasing in size</blockquote>
           <h3>CHANGES</h3>
           <ul>
-            <li><strong>60 seconds per stage</strong> (was 90 s). Across all 3 stages the base budget is now 180 s total</li>
-            <li><strong>Slightly further apart:</strong> distances 60 / 140 / 240 k → <strong>65 / 150 / 255 k</strong>. Gaps are 65 k / 85 k / 105 k (was 60 / 80 / 100)</li>
-            <li>Net feel: meaningfully tighter. Time-out is back in play even with carry-over — back-of-the-envelope says you need to sustain about 1500 u/s (~94 % of MAX_SPEED) to finish on the wire. Slacking in early stages eats into the carry-over and burns you on stage 3</li>
+            <li><strong>Big centred track intro</strong> at the start of every track. Two-line readout — <code>TRACK NN</code> in amber + the track name in white-on-cyan-halo at ~84 px Press Start 2P</li>
+            <li><strong>Pop-in</strong> (0 → 0.35 s): scale bounces 0.5 → 1.15 → 1.0, fades in. A tiny white screen flash for the first 0.15 s gives it some "thunk"</li>
+            <li><strong>Hold</strong> (0.35 → 1.7 s): full size, centred at <code>H · 0.42</code></li>
+            <li><strong>Fade-out + grow</strong> (1.7 → 3.6 s): scale eases-out from 1.0× → 2.0× while alpha eases-in from 1 → 0. Title "expands past the camera" rather than shrinking + sliding. Stays centred the whole time</li>
+            <li><strong>HUD <code>#track-label</code> stays visible</strong> at the top throughout — the canvas intro plays on top of it. No more crossfade plumbing on the HUD element; the small label is just always there so the player always knows the track</li>
+            <li><strong>Race clock paused</strong> while <code>introT &lt; TRACK_INTRO_DURATION</code> — <code>race.timeLeft</code> doesn't tick and checkpoints don't fire. Player can creep forward during the intro for free positioning</li>
+            <li><code>race.introT</code> reset to 0 by <code>initRace()</code> so every <code>advanceToNextTrack()</code> triggers a fresh intro</li>
           </ul>
         </div>
       </article>

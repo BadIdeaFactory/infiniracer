@@ -26,6 +26,52 @@
 
     <section class="versions">
 
+      <!-- v022 -->
+      <article class="ver acc-1">
+        <div class="ver-header">
+          <div>
+            <div class="ver-no">V022</div>
+            <div class="ver-tag">★ multi-track campaign + named tracks ★</div>
+          </div>
+          <a class="ver-play" href="v022/">▶ PLAY V022</a>
+        </div>
+        <div class="step">
+          <h3>PROMPT</h3>
+          <blockquote>ok so this is track 1. maintain the random seed for track 1 but choose other seeds for the other tracks, after track 1 comes track 2 and so on, give each track a new name based on boards of canada song titles, these should be random but seeded so procedural. inform the player of which track they're about to play. also if you finish a track, leave the score on a bit longer before going to the next track. after crossing the line the vehicle should slow down  so as not to crash</blockquote>
+          <h3>CHANGES</h3>
+          <ul>
+            <li><strong>Track 1 keeps the legacy seed (7341).</strong> <code>trackSeedFor(n)</code> returns 7341 for track 1; tracks 2+ derive a deterministic seed from <code>hash01(n · 13.37 + 17.6) · 1 000 000</code></li>
+            <li><strong>Track names.</strong> A <code>TRACK_NAMES</code> array of band-song-title identifiers used as level labels. Track 1 is hard-coded to the first entry (ROYGBIV); <code>trackNameFor(n)</code> picks the rest via <code>hash01(n · 11.7 + 3.3)</code></li>
+            <li><strong>Multi-track campaign.</strong> <code>race.trackNum / trackName</code>; <code>runScoreAccum</code> carries score across tracks; <code>advanceToNextTrack()</code> regenerates the world with the new seed but preserves score. <code>commitReset()</code> is now the failure path only</li>
+            <li><strong>Persistent TRACK label</strong> at the top of the HUD with diff-caching</li>
+            <li><strong>Finish overlay extended</strong> 6 s → 9.5 s with a two-phase crossfade: score breakdown then NEXT TRACK callout</li>
+            <li><strong>Vehicle slows down past the line.</strong> <code>throttle=0, brake=1</code> override during the post-finish hold; off-track crash check skipped so a curve after the flag can't wipe out the celebration</li>
+            <li>Crash readout (WIPEOUT / TIME OVER) shows the full accumulated score</li>
+          </ul>
+        </div>
+      </article>
+
+      <!-- v021 -->
+      <article class="ver acc-4">
+        <div class="ver-header">
+          <div>
+            <div class="ver-no">V021</div>
+            <div class="ver-tag">★ tighter clock + longer race ★</div>
+          </div>
+          <a class="ver-play" href="v021/">▶ PLAY V021</a>
+        </div>
+        <div class="step">
+          <h3>PROMPT</h3>
+          <blockquote>ok tweak it so it's only 60 seconds per stage, and make them slightly further apart</blockquote>
+          <h3>CHANGES</h3>
+          <ul>
+            <li>Per-stage duration 90 s → 60 s. Total base budget 270 s → 180 s</li>
+            <li>Distances 60 / 140 / 240 k → 65 / 150 / 255 k. Gaps now 65 k / 85 k / 105 k</li>
+            <li>Net: time-out back in play even with carry-over. Need ~1500 u/s (~94% MAX_SPEED) to finish on the wire</li>
+          </ul>
+        </div>
+      </article>
+
       <!-- v020 -->
       <article class="ver acc-2">
         <div class="ver-header">

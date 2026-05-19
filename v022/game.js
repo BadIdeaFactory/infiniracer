@@ -392,11 +392,6 @@
   const FINISH_OVERLAY_DURATION = 9.5;  // seconds — long enough to read score + next-track callout
   const FINISH_SCORE_PHASE      = 5.2;  // score breakdown holds for this long, then NEXT TRACK
   const CP_FLASH_DURATION       = 1.5;  // seconds the CHECKPOINT! banner sits on screen
-  // Track-intro: a big centred "TRACK 01 / ROYGBIV" pops in, holds, then
-  // shrinks + slides up to the top-of-HUD position. Race timer + checkpoints
-  // are paused for the duration so the player gets to read it.
-  const TRACK_INTRO_DURATION = 3.6;
-  const TRACK_INTRO_HOLD     = 1.7;     // big-centred hold before the shrink phase
 
   // ── Track progression ──
   // Track 1 keeps the legacy seed (7341) so the original course is preserved.
@@ -451,12 +446,10 @@
     cpFlashT: 0,         // brief white flash on checkpoint cross
     trackNum: 1,         // 1, 2, 3, ... — persists across initRace
     trackName: TRACK_NAMES[0],
-    introT: 0,           // seconds since the track-intro started (counts up)
   };
   let crashReason = "wipeout"; // "wipeout" | "timeout"
   // Resets the per-track state ONLY — does not touch trackNum / trackName /
-  // runScoreAccum, so advanceToNextTrack can reuse this. Also kicks off
-  // the track-intro animation by zeroing introT.
+  // runScoreAccum, so advanceToNextTrack can reuse this.
   function initRace() {
     race.stage = 0;
     race.timeLeft = STAGES[0].duration;
@@ -466,7 +459,6 @@
     race.finalBaseScore = 0;
     race.finalBonus = 0;
     race.cpFlashT = 0;
-    race.introT = 0;
     crashReason = "wipeout";
   }
 
@@ -628,13 +620,7 @@
 
     // ── race timer + checkpoint detection ──
     // Don't tick once finished (post-finish overlay handles flow).
-    // Also gated by the track-intro: while the big TRACK XX banner is on
-    // screen the clock is paused so the player gets to read it. The intro
-    // counter still advances regardless.
-    if (race.introT < TRACK_INTRO_DURATION) {
-      race.introT += dt;
-    }
-    if (!race.finished && race.introT >= TRACK_INTRO_DURATION) {
+    if (!race.finished) {
       race.timeLeft -= dt;
       if (race.cpFlashT > 0) race.cpFlashT = Math.max(0, race.cpFlashT - dt);
       if (race.timeLeft <= 0) {
@@ -1233,86 +1219,13 @@
     // ─── Virtual joystick (HUD overlay) ─────────────────────────
     drawJoystick();
 
-    // ─── Track intro / checkpoint banner / finish / crash ───────
-    // Track intro plays at the very start of every track and animates into
-    // the HUD label position; the other overlays defer to it.
-    if (race.introT < TRACK_INTRO_DURATION && !explosion.active && !race.finished) {
-      drawTrackIntro();
-    } else if (race.cpFlashT > 0 && !explosion.active && !race.finished) {
-      drawCheckpointFlash();
-    }
+    // ─── Crash explosion (drawn last so it owns the screen) ─────
+    if (race.cpFlashT > 0 && !explosion.active && !race.finished) drawCheckpointFlash();
     if (explosion.active) drawExplosion();
     if (race.finished && !explosion.active) drawFinishOverlay();
   }
 
   // ─── Explosion render ────────────────────────────────────────
-  function drawTrackIntro() {
-    // Big centred title pops in (overshoot bounce), holds briefly, then
-    // fades out while growing — like it's expanding past the camera.
-    // The HUD #track-label stays visible the whole time so the player
-    // always knows the track name. Race timer is paused for the duration.
-    const t = race.introT;
-    if (t >= TRACK_INTRO_DURATION) return;
-
-    const ALL  = TRACK_INTRO_DURATION;
-    const HOLD = TRACK_INTRO_HOLD;
-    const POP  = 0.35;
-
-    let alpha, scale;
-    if (t < POP) {
-      // Overshoot bounce: 0.5 → 1.15 (at midpoint) → 1.0
-      const p = t / POP;
-      if (p < 0.5) scale = 0.5 + (1.15 - 0.5) * (p / 0.5);
-      else         scale = 1.15 - (1.15 - 1.0) * ((p - 0.5) / 0.5);
-      alpha = Math.min(1, p * 2);
-    } else if (t < HOLD) {
-      alpha = 1;
-      scale = 1.0;
-    } else {
-      // Phase 2: fade out while growing — feels like the title is
-      // pushing past the camera. Scale eases out (fast at first, settles);
-      // alpha eases in (slow at first, fast at end) so the readout is
-      // legible until the growth has started.
-      const p = Math.min(1, (t - HOLD) / (ALL - HOLD));
-      const eScale = 1 - Math.pow(1 - p, 2);   // ease-out
-      alpha = 1 - p * p;                       // ease-in fade
-      scale = 1.0 + 1.0 * eScale;              // → 2.0×
-    }
-    if (alpha <= 0) return;
-
-    const x = W / 2;
-    const y = H * 0.42;
-    const numSize  = 28 * scale;
-    const nameSize = 84 * scale;
-
-    ctx.textAlign = "center";
-    ctx.textBaseline = "middle";
-
-    // Subtle white screen-flash at the very moment of pop-in.
-    if (t < 0.15) {
-      const flashA = (1 - t / 0.15) * 0.14;
-      ctx.fillStyle = `rgba(255, 255, 255, ${flashA})`;
-      ctx.fillRect(0, 0, W, H);
-    }
-
-    // "TRACK 01" — amber, smaller, sits above the name.
-    ctx.font = `${numSize}px "Press Start 2P", monospace`;
-    ctx.shadowColor = "#ffb14b";
-    ctx.shadowBlur = 18 * scale + 6;
-    ctx.fillStyle = `rgba(255, 230, 0, ${alpha})`;
-    ctx.fillText("TRACK " + String(race.trackNum).padStart(2, "0"),
-                 x, y - nameSize * 0.62);
-
-    // Track name — white with cyan halo, big.
-    ctx.font = `${nameSize}px "Press Start 2P", monospace`;
-    ctx.shadowColor = "#5cf0ff";
-    ctx.shadowBlur = 32 * scale + 8;
-    ctx.fillStyle = `rgba(255, 255, 255, ${alpha})`;
-    ctx.fillText(race.trackName, x, y + nameSize * 0.25);
-
-    ctx.shadowBlur = 0;
-  }
-
   function drawCheckpointFlash() {
     // race.cpFlashT counts DOWN from CP_FLASH_DURATION to 0; elapsed goes
     // up from 0 → CP_FLASH_DURATION. Snap-zoom from 1.4× to 1.0× while
@@ -1761,7 +1674,6 @@
     }
 
     // Track label (persists across stages; only changes between tracks).
-    // Always visible — the canvas intro plays on top of it without hiding it.
     if (race.trackNum !== _hudTrackNum) {
       trackNumEl.textContent = String(race.trackNum).padStart(2, "0");
       _hudTrackNum = race.trackNum;
