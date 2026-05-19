@@ -32,25 +32,28 @@
 
     <section class="versions">
 
-      <!-- v018 (current) -->
-      <article class="ver acc-1">
+      <!-- v019 (current) -->
+      <article class="ver acc-3">
         <div class="ver-header">
           <div>
-            <div class="ver-no">V018</div>
-            <div class="ver-tag">★ start-screen pickup tutorial ★</div>
+            <div class="ver-no">V019</div>
+            <div class="ver-tag">★ OutRun-style timed stages ★</div>
           </div>
-          <a class="ver-play" href="v018/">▶ PLAY V018</a>
+          <a class="ver-play" href="v019/">▶ PLAY V019</a>
         </div>
         <div class="step">
           <h3>PROMPT</h3>
-          <blockquote>explain what the hexagon pick ups do at the start, maybe show an example of the spinning hexagon pickup</blockquote>
+          <blockquote>ok let's make a radical change. it's too easy to get a high score by simply driving slowly. add an outrun style countdown where you must complete 3 stages in a certain time, think of it as 3 checkpoints, when you hit a checkpoint before time runs out the countdown resets after the third stage you get to the chequered flag and any time you had left on the clock is generously factored into your score. maintain the style.</blockquote>
           <h3>CHANGES</h3>
           <ul>
-            <li>New <strong>SHIELD PICKUP</strong> tutorial card in the start overlay — a live SVG hexagon that spins (<code>5s linear infinite</code>) with a pulsing white core (<code>0.9s ease-in-out</code>), matching the in-game magenta colour + glow</li>
-            <li>One-line explanation next to the demo: <em>"grab one to charge the side rails for 5 seconds — the track edges push you back harder, so you can lean into corners"</em></li>
-            <li>Styled to match the overlay aesthetic: dashed magenta border, low-opacity magenta tint, Press Start 2P label + VT323 description</li>
-            <li>SVG uses <code>drop-shadow</code> filters for the phosphor glow so the demo reads at the same vector-tube intensity as the in-game pickup</li>
-            <li><strong>Fix pass</strong> after first cut: the hex was orbiting (translating in a wide circle) rather than spinning in place. Cause: <code>transform-origin: center</code> on an inner <code>&lt;g&gt;</code> resolves to the SVG viewport's top-left in some browsers because <code>transform-box</code> defaults are inconsistent. Moved the spin to the outer <code>&lt;svg&gt;</code> element (a DOM element where <code>transform-origin: center</code> is well-behaved), kept the core's pulse on the inner circle with <code>transform-box: fill-box</code> so its scale stays pinned to its own centre. Added 6 white vertex phosphor dots that ride along with the rotation — matches the in-game render where each <code>beam()</code> call auto-emits dots at both endpoints</li>
+            <li><strong>3-stage race</strong> with countdown clock. Stage distances: 6000 / 14000 / 24000 units. Per-stage durations: 22 / 22 / 25 seconds. Each stage's checkpoint resets the timer to the next stage's duration. Reach the chequered flag at 24000 to finish</li>
+            <li><strong>TIME OVER</strong> — when <code>race.timeLeft</code> hits 0, <code>triggerCrash("timeout")</code> fires the existing slow-mo explosion sequence with a "TIME OVER" label instead of "WIPEOUT" (separate <code>crashReason</code> flag distinguishes them)</li>
+            <li><strong>Generous bonus at the flag</strong> — <code>race.finalBonus = floor(timeLeft × 250,000)</code> added on top of the base score (speed × distance at flag-cross). At MAX_SPEED a clean run can leave ~14 s on the final clock — that's a 3.5 M bonus on top of the running score</li>
+            <li><strong>Top HUD restructured:</strong> big Press Start 2P <code>#timer</code> (clamp 32→64 px) at top centre with urgency colours — cyan above 10 s, amber 5–10 s, rose under 5 s with a step-blink animation. Below it a pip indicator <code>1 ✦ 2 ✦ 3</code> with the active stage glowing amber and completed stages in cyan. Score sits below the pips at a smaller size (was the giant top-centre line before)</li>
+            <li><strong>Checkpoints rendered on the track</strong> — intermediate checkpoints (1 + 2) draw as a bright amber bar across the track at the target distance (dimmer when behind you); the chequered flag is a two-row alternating white + cyan pattern across the track at the final target</li>
+            <li><strong>Finish screen</strong> — <code>drawFinishOverlay()</code> renders "FINISH!" plus a score breakdown (<code>SCORE / + TIME BONUS / = total</code>) over a fading backdrop. Holds for 6 seconds then <code>commitReset()</code> restarts at stage 1</li>
+            <li>One-liner added to the start overlay: <em>"3 STAGES · BEAT THE CLOCK TO EACH CHECKPOINT · FLAG = TIME BONUS"</em></li>
+            <li><code>commitReset()</code> calls <code>initRace()</code> so a fresh run always starts at stage 1 with a full clock</li>
           </ul>
         </div>
       </article>

@@ -26,6 +26,29 @@
 
     <section class="versions">
 
+      <!-- v018 -->
+      <article class="ver acc-1">
+        <div class="ver-header">
+          <div>
+            <div class="ver-no">V018</div>
+            <div class="ver-tag">★ start-screen pickup tutorial ★</div>
+          </div>
+          <a class="ver-play" href="v018/">▶ PLAY V018</a>
+        </div>
+        <div class="step">
+          <h3>PROMPT</h3>
+          <blockquote>explain what the hexagon pick ups do at the start, maybe show an example of the spinning hexagon pickup</blockquote>
+          <h3>CHANGES</h3>
+          <ul>
+            <li>New <strong>SHIELD PICKUP</strong> tutorial card in the start overlay — a live SVG hexagon that spins (<code>5s linear infinite</code>) with a pulsing white core (<code>0.9s ease-in-out</code>), matching the in-game magenta colour + glow</li>
+            <li>One-line explanation next to the demo: <em>"grab one to charge the side rails for 5 seconds — the track edges push you back harder, so you can lean into corners"</em></li>
+            <li>Styled to match the overlay aesthetic: dashed magenta border, low-opacity magenta tint, Press Start 2P label + VT323 description</li>
+            <li>SVG uses <code>drop-shadow</code> filters for the phosphor glow so the demo reads at the same vector-tube intensity as the in-game pickup</li>
+            <li><strong>Fix pass</strong> after first cut: the hex was orbiting (translating in a wide circle) rather than spinning in place. Cause: <code>transform-origin: center</code> on an inner <code>&lt;g&gt;</code> resolves to the SVG viewport's top-left in some browsers because <code>transform-box</code> defaults are inconsistent. Moved the spin to the outer <code>&lt;svg&gt;</code> element (a DOM element where <code>transform-origin: center</code> is well-behaved), kept the core's pulse on the inner circle with <code>transform-box: fill-box</code> so its scale stays pinned to its own centre. Added 6 white vertex phosphor dots that ride along with the rotation — matches the in-game render where each <code>beam()</code> call auto-emits dots at both endpoints</li>
+          </ul>
+        </div>
+      </article>
+
       <!-- v017 -->
       <article class="ver acc-3">
         <div class="ver-header">
