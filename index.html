@@ -32,29 +32,22 @@
 
     <section class="versions">
 
-      <!-- v023 (current) -->
-      <article class="ver acc-3">
+      <!-- v024 (current) -->
+      <article class="ver acc-2">
         <div class="ver-header">
           <div>
-            <div class="ver-no">V023</div>
-            <div class="ver-tag">★ track-intro: pop + fade-out-while-growing ★</div>
+            <div class="ver-no">V024</div>
+            <div class="ver-tag">★ track-intro: responsive + snappier ★</div>
           </div>
-          <a class="ver-play" href="v023/">▶ PLAY V023</a>
+          <a class="ver-play" href="v024/">▶ PLAY V024</a>
         </div>
         <div class="step">
           <h3>PROMPT</h3>
-          <blockquote>actually it's fine, but show the track name more prominently at the start of the race then move into into position at the top in a cool way
-
-(follow-up) always show the track name at the top and fade it out instead of moving it to the top. it should fade out while increasing in size</blockquote>
+          <blockquote>oops the track title doesn't fit on a mobile screen, adjust accordingly and fade it out quicker</blockquote>
           <h3>CHANGES</h3>
           <ul>
-            <li><strong>Big centred track intro</strong> at the start of every track. Two-line readout — <code>TRACK NN</code> in amber + the track name in white-on-cyan-halo at ~84 px Press Start 2P</li>
-            <li><strong>Pop-in</strong> (0 → 0.35 s): scale bounces 0.5 → 1.15 → 1.0, fades in. A tiny white screen flash for the first 0.15 s gives it some "thunk"</li>
-            <li><strong>Hold</strong> (0.35 → 1.7 s): full size, centred at <code>H · 0.42</code></li>
-            <li><strong>Fade-out + grow</strong> (1.7 → 3.6 s): scale eases-out from 1.0× → 2.0× while alpha eases-in from 1 → 0. Title "expands past the camera" rather than shrinking + sliding. Stays centred the whole time</li>
-            <li><strong>HUD <code>#track-label</code> stays visible</strong> at the top throughout — the canvas intro plays on top of it. No more crossfade plumbing on the HUD element; the small label is just always there so the player always knows the track</li>
-            <li><strong>Race clock paused</strong> while <code>introT &lt; TRACK_INTRO_DURATION</code> — <code>race.timeLeft</code> doesn't tick and checkpoints don't fire. Player can creep forward during the intro for free positioning</li>
-            <li><code>race.introT</code> reset to 0 by <code>initRace()</code> so every <code>advanceToNextTrack()</code> triggers a fresh intro</li>
+            <li><strong>Responsive title sizing.</strong> <code>drawTrackIntro()</code> now measures the track name at the ideal 84 px and shrinks it to fit <code>W · 0.88</code> if it would overflow. Long titles fit cleanly on narrow phones; desktops still get the full size. The <code>TRACK NN</code> sub-label + glow blur radii scale relative to the fitted name size so the proportions stay right</li>
+            <li><strong>Snappier intro.</strong> <code>TRACK_INTRO_DURATION</code> 3.6 s → 2.4 s; <code>TRACK_INTRO_HOLD</code> 1.7 s → 1.3 s. Fade-out phase compressed from ~1.9 s to ~1.1 s. Same pop-in + grow-while-fading motion, just less time on screen</li>
           </ul>
         </div>
       </article>

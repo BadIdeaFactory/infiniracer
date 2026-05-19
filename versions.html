@@ -26,6 +26,32 @@
 
     <section class="versions">
 
+      <!-- v023 -->
+      <article class="ver acc-3">
+        <div class="ver-header">
+          <div>
+            <div class="ver-no">V023</div>
+            <div class="ver-tag">★ track-intro: pop + fade-out-while-growing ★</div>
+          </div>
+          <a class="ver-play" href="v023/">▶ PLAY V023</a>
+        </div>
+        <div class="step">
+          <h3>PROMPT</h3>
+          <blockquote>actually it's fine, but show the track name more prominently at the start of the race then move into into position at the top in a cool way
+
+(follow-up) always show the track name at the top and fade it out instead of moving it to the top. it should fade out while increasing in size</blockquote>
+          <h3>CHANGES</h3>
+          <ul>
+            <li>Big centred track intro at the start of every track. Two-line readout — <code>TRACK NN</code> in amber + the track name in white-on-cyan-halo at ~84 px Press Start 2P</li>
+            <li>Pop-in (0 → 0.35 s): overshoot bounce scale 0.5 → 1.15 → 1.0 + a brief white screen-flash</li>
+            <li>Hold (0.35 → 1.7 s): full size centred at <code>H · 0.42</code></li>
+            <li>Fade-out + grow (1.7 → 3.6 s): scale 1.0× → 2.0× while alpha 1 → 0 — title expands past the camera</li>
+            <li>HUD <code>#track-label</code> stays visible the whole time; canvas intro plays on top</li>
+            <li>Race clock paused while <code>introT &lt; TRACK_INTRO_DURATION</code></li>
+          </ul>
+        </div>
+      </article>
+
       <!-- v022 -->
       <article class="ver acc-1">
         <div class="ver-header">
