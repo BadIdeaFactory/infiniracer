@@ -26,6 +26,30 @@
 
     <section class="versions">
 
+      <!-- v019 -->
+      <article class="ver acc-3">
+        <div class="ver-header">
+          <div>
+            <div class="ver-no">V019</div>
+            <div class="ver-tag">★ OutRun-style timed stages ★</div>
+          </div>
+          <a class="ver-play" href="v019/">▶ PLAY V019</a>
+        </div>
+        <div class="step">
+          <h3>PROMPT</h3>
+          <blockquote>ok let's make a radical change. it's too easy to get a high score by simply driving slowly. add an outrun style countdown where you must complete 3 stages in a certain time, think of it as 3 checkpoints, when you hit a checkpoint before time runs out the countdown resets after the third stage you get to the chequered flag and any time you had left on the clock is generously factored into your score. maintain the style.</blockquote>
+          <h3>CHANGES</h3>
+          <ul>
+            <li><strong>3-stage race</strong> with countdown clock. Stage distances: 6000 / 14000 / 24000 units. Per-stage durations: 22 / 22 / 25 seconds. Each stage's checkpoint resets the timer to the next stage's duration. Reach the chequered flag at 24000 to finish</li>
+            <li><strong>TIME OVER</strong> — when <code>race.timeLeft</code> hits 0, <code>triggerCrash("timeout")</code> fires the existing slow-mo explosion sequence with a "TIME OVER" label instead of "WIPEOUT" (separate <code>crashReason</code> flag distinguishes them)</li>
+            <li><strong>Generous bonus at the flag</strong> — <code>race.finalBonus = floor(timeLeft × 250,000)</code> added on top of the base score (speed × distance at flag-cross)</li>
+            <li><strong>Top HUD restructured:</strong> big Press Start 2P <code>#timer</code> at top centre with urgency colours — cyan above 10 s, amber 5–10 s, rose under 5 s with a step-blink animation. Below it a pip indicator <code>1 ✦ 2 ✦ 3</code> with the active stage glowing amber and completed stages in cyan. Score sits below the pips at a smaller size</li>
+            <li>Intermediate checkpoints draw as a bright amber bar across the track; final is a two-row alternating white + cyan chequered banner</li>
+            <li><strong>Finish screen</strong> — <code>drawFinishOverlay()</code> renders "FINISH!" plus a score breakdown over a fading backdrop, holds 6 s then auto-resets</li>
+          </ul>
+        </div>
+      </article>
+
       <!-- v018 -->
       <article class="ver acc-1">
         <div class="ver-header">

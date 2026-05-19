@@ -32,28 +32,26 @@
 
     <section class="versions">
 
-      <!-- v019 (current) -->
-      <article class="ver acc-3">
+      <!-- v020 (current) -->
+      <article class="ver acc-2">
         <div class="ver-header">
           <div>
-            <div class="ver-no">V019</div>
-            <div class="ver-tag">★ OutRun-style timed stages ★</div>
+            <div class="ver-no">V020</div>
+            <div class="ver-tag">★ longer stages + carry-over + CHECKPOINT! ★</div>
           </div>
-          <a class="ver-play" href="v019/">▶ PLAY V019</a>
+          <a class="ver-play" href="v020/">▶ PLAY V020</a>
         </div>
         <div class="step">
           <h3>PROMPT</h3>
-          <blockquote>ok let's make a radical change. it's too easy to get a high score by simply driving slowly. add an outrun style countdown where you must complete 3 stages in a certain time, think of it as 3 checkpoints, when you hit a checkpoint before time runs out the countdown resets after the third stage you get to the chequered flag and any time you had left on the clock is generously factored into your score. maintain the style.</blockquote>
+          <blockquote>ok a few things, make the stages further apart say 10 times further apart, add any remaining time at checkpoint to the new countdown. give the player 90 seconds per stage and when you pass a checkpoint the word checkpoint! should be displayed in a cool way and then disappear.</blockquote>
           <h3>CHANGES</h3>
           <ul>
-            <li><strong>3-stage race</strong> with countdown clock. Stage distances: 6000 / 14000 / 24000 units. Per-stage durations: 22 / 22 / 25 seconds. Each stage's checkpoint resets the timer to the next stage's duration. Reach the chequered flag at 24000 to finish</li>
-            <li><strong>TIME OVER</strong> — when <code>race.timeLeft</code> hits 0, <code>triggerCrash("timeout")</code> fires the existing slow-mo explosion sequence with a "TIME OVER" label instead of "WIPEOUT" (separate <code>crashReason</code> flag distinguishes them)</li>
-            <li><strong>Generous bonus at the flag</strong> — <code>race.finalBonus = floor(timeLeft × 250,000)</code> added on top of the base score (speed × distance at flag-cross). At MAX_SPEED a clean run can leave ~14 s on the final clock — that's a 3.5 M bonus on top of the running score</li>
-            <li><strong>Top HUD restructured:</strong> big Press Start 2P <code>#timer</code> (clamp 32→64 px) at top centre with urgency colours — cyan above 10 s, amber 5–10 s, rose under 5 s with a step-blink animation. Below it a pip indicator <code>1 ✦ 2 ✦ 3</code> with the active stage glowing amber and completed stages in cyan. Score sits below the pips at a smaller size (was the giant top-centre line before)</li>
-            <li><strong>Checkpoints rendered on the track</strong> — intermediate checkpoints (1 + 2) draw as a bright amber bar across the track at the target distance (dimmer when behind you); the chequered flag is a two-row alternating white + cyan pattern across the track at the final target</li>
-            <li><strong>Finish screen</strong> — <code>drawFinishOverlay()</code> renders "FINISH!" plus a score breakdown (<code>SCORE / + TIME BONUS / = total</code>) over a fading backdrop. Holds for 6 seconds then <code>commitReset()</code> restarts at stage 1</li>
-            <li>One-liner added to the start overlay: <em>"3 STAGES · BEAT THE CLOCK TO EACH CHECKPOINT · FLAG = TIME BONUS"</em></li>
-            <li><code>commitReset()</code> calls <code>initRace()</code> so a fresh run always starts at stage 1 with a full clock</li>
+            <li><strong>Stages 10× further apart.</strong> Distances 6000 / 14000 / 24000 → <strong>60 000 / 140 000 / 240 000</strong>. Stage gaps are now 60k / 80k / 100k instead of 6k / 8k / 10k</li>
+            <li><strong>90 seconds per stage</strong> across the board (was 22 / 22 / 25). With <code>MAX_SPEED = 1600</code>, the first stage alone takes ~37 s at full throttle — comfortable, but slow driving will burn the clock</li>
+            <li><strong>Time carries over at checkpoints.</strong> When you cross a checkpoint, the leftover seconds on the current clock are <em>added</em> to the next stage's 90 s. So fast driving compounds — finishing stage 1 with 50 s left gives you 140 s for stage 2. Rewards committing early</li>
+            <li><strong>CHECKPOINT! banner</strong> renders centre-screen on every intermediate cross. Snap-zoom from 1.4× scale to 1.0× while fading in (0.15 s), holds at full size for ~0.9 s, then fades out over 0.45 s. Two-pass text — a wide amber drop-shadow halo behind, a slightly smaller white-on-amber core in front for a vector-tube hot edge. Disappears entirely before the next stage gets going</li>
+            <li><code>CP_FLASH_DURATION = 1.5 s</code> total. <code>race.cpFlashT</code> already existed as a placeholder — now wired to <code>drawCheckpointFlash()</code></li>
+            <li>Final checkpoint (the chequered flag) does <em>not</em> show CHECKPOINT! — the finish overlay takes over instead</li>
           </ul>
         </div>
       </article>
