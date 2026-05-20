@@ -32,22 +32,23 @@
 
     <section class="versions">
 
-      <!-- v024 (current) -->
-      <article class="ver acc-2">
+      <!-- v025 (current) -->
+      <article class="ver acc-4">
         <div class="ver-header">
           <div>
-            <div class="ver-no">V024</div>
-            <div class="ver-tag">★ track-intro: responsive + snappier ★</div>
+            <div class="ver-no">V025</div>
+            <div class="ver-tag">★ easier: checkpoints pulled in ★</div>
           </div>
-          <a class="ver-play" href="v024/">▶ PLAY V024</a>
+          <a class="ver-play" href="v025/">▶ PLAY V025</a>
         </div>
         <div class="step">
           <h3>PROMPT</h3>
-          <blockquote>oops the track title doesn't fit on a mobile screen, adjust accordingly and fade it out quicker</blockquote>
+          <blockquote>it's a bit to difficult. make the chekpoints and finish line slightly closer together</blockquote>
           <h3>CHANGES</h3>
           <ul>
-            <li><strong>Responsive title sizing.</strong> <code>drawTrackIntro()</code> now measures the track name at the ideal 84 px and shrinks it to fit <code>W · 0.88</code> if it would overflow. Long titles fit cleanly on narrow phones; desktops still get the full size. The <code>TRACK NN</code> sub-label + glow blur radii scale relative to the fitted name size so the proportions stay right</li>
-            <li><strong>Snappier intro.</strong> <code>TRACK_INTRO_DURATION</code> 3.6 s → 2.4 s; <code>TRACK_INTRO_HOLD</code> 1.7 s → 1.3 s. Fade-out phase compressed from ~1.9 s to ~1.1 s. Same pop-in + grow-while-fading motion, just less time on screen</li>
+            <li>Stage distances pulled in: 65 / 150 / 255 k → <strong>55 / 130 / 220 k</strong>. Gaps drop from 65 / 85 / 105 to <strong>55 / 75 / 90</strong> (each ~14 % shorter)</li>
+            <li>Same flat 60 s per stage and same carry-over rule. Required sustained pace drops from ~1500 u/s (94 % MAX_SPEED) to ~1300 u/s (81 % MAX_SPEED) — challenging but no longer brutal</li>
+            <li>At MAX_SPEED a clean run now leaves ~42 s on the final clock (was ~21 s). Bonus pool is bigger: 42 × 250 k ≈ 10.6 M</li>
           </ul>
         </div>
       </article>
