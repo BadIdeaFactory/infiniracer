@@ -32,23 +32,26 @@
 
     <section class="versions">
 
-      <!-- v025 (current) -->
-      <article class="ver acc-4">
+      <!-- v026 (current) -->
+      <article class="ver acc-1">
         <div class="ver-header">
           <div>
-            <div class="ver-no">V025</div>
-            <div class="ver-tag">★ easier: checkpoints pulled in ★</div>
+            <div class="ver-no">V026</div>
+            <div class="ver-tag">★ shield: obvious aura + low-time flash ★</div>
           </div>
-          <a class="ver-play" href="v025/">▶ PLAY V025</a>
+          <a class="ver-play" href="v026/">▶ PLAY V026</a>
         </div>
         <div class="step">
           <h3>PROMPT</h3>
-          <blockquote>it's a bit to difficult. make the chekpoints and finish line slightly closer together</blockquote>
+          <blockquote>I'm getting feedback that it's not obvious enough when you have the power up. Can you make it more obvious?
+
+(follow-up) it doesn't give any indication that it's running out, make it flash as an indication</blockquote>
           <h3>CHANGES</h3>
           <ul>
-            <li>Stage distances pulled in: 65 / 150 / 255 k → <strong>55 / 130 / 220 k</strong>. Gaps drop from 65 / 85 / 105 to <strong>55 / 75 / 90</strong> (each ~14 % shorter)</li>
-            <li>Same flat 60 s per stage and same carry-over rule. Required sustained pace drops from ~1500 u/s (94 % MAX_SPEED) to ~1300 u/s (81 % MAX_SPEED) — challenging but no longer brutal</li>
-            <li>At MAX_SPEED a clean run now leaves ~42 s on the final clock (was ~21 s). Bonus pool is bigger: 42 × 250 k ≈ 10.6 M</li>
+            <li><strong>Active-shield aura.</strong> While <code>car.boostT &gt; 0</code>, two counter-spinning magenta (<code>#ff5cff</code>) hex rings wrap the car (radius ~30 vs body ~22), breathing on a sine pulse and run through the glow + phosphor passes — the powered-up state now reads at a glance instead of relying on the subtle 6 Hz body-colour blink alone</li>
+            <li><strong>Running-out warning.</strong> In the final <strong>2.0 s</strong> the rings strobe on/off, the blink accelerating from <strong>~3.5 Hz to ~9 Hz</strong> as the timer drains to zero — the quickening flash reads as "about to drop"</li>
+            <li>Each strobe "on" beat pops <strong>white-hot, thicker, and slightly larger</strong> than the steady ring (and the vertex sparks brighten to white) so it reads as a deliberate alarm, not flicker</li>
+            <li>Canvas-only — the top HUD was left untouched to keep it uncluttered</li>
           </ul>
         </div>
       </article>
